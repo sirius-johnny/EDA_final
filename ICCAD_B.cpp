@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
 {
     fstream fin;
     fin.open("ProblemB_case1.txt", ios::in);
-    fstream fout;
-    fout.open("o.txt", ios::out);
+    // fstream fout;
+    // fout.open("o.txt", ios::out);
 
     if (fin)
     {
@@ -141,7 +141,121 @@ int main(int argc, char *argv[])
         }
 
         else {TB = TA;}
-    
+
+        getline(fin, lineStr); //22
         
+        words.clear();
+        getline(fin, lineStr);
+        istringstream a(lineStr);
+        while (a >> word)
+        {
+            words.push_back(word);
+        }
+        DieSize_LL_X = stoi(words[1]);
+        DieSize_LL_Y = stoi(words[2]);
+        DieSize_UR_X = stoi(words[3]);
+        DieSize_UR_Y = stoi(words[4]);
+
+        getline(fin, lineStr); //24
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream b(lineStr);
+        while (b >> word)
+        {
+            words.push_back(word);
+        }
+        TopDieMaxUtil = stoi(words[1]);
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream c(lineStr);
+        while (c >> word)
+        {
+            words.push_back(word);
+        }
+        BottomDieMaxUtil = stoi(words[1]);
+
+        getline(fin, lineStr); //27
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream d(lineStr);
+        while (d >> word)
+        {
+            words.push_back(word);
+        }
+        TopDieRows_X = stoi(words[1]);
+        TopDieRows_Y = stoi(words[2]);
+        TopDieRows_row_len = stoi(words[3]);
+        TopDieRows_row_height = stoi(words[4]);
+        TopDieRows_repeat_count = stoi(words[5]);
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream e(lineStr);
+        while (e >> word)
+        {
+            words.push_back(word);
+        }
+        BottomDieRows_X = stoi(words[1]);
+        BottomDieRows_Y = stoi(words[2]);
+        BottomDieRows_row_len = stoi(words[3]);
+        BottomDieRows_row_height = stoi(words[4]);
+        BottomDieRows_repeat_count = stoi(words[5]);
+
+        getline(fin, lineStr); //30
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream f(lineStr);
+        while (f >> word)
+        {
+            words.push_back(word);
+        }
+        TopDieTech = words[1];
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream g(lineStr);
+        while (g >> word)
+        {
+            words.push_back(word);
+        }
+        BottomDieTech = words[1];
+
+        getline(fin, lineStr); //33
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream h(lineStr);
+        while (h >> word)
+        {
+            words.push_back(word);
+        }
+        TerminalSize_X = stoi(words[1]);
+        TerminalSize_Y = stoi(words[2]);
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream i(lineStr);
+        while (i >> word)
+        {
+            words.push_back(word);
+        }
+        TerminalSpacing = stoi(words[1]);
+        
+        words.clear();
+        getline(fin, lineStr);
+        istringstream j(lineStr);
+        while (j >> word)
+        {
+            words.push_back(word);
+        }
+        TerminalCost = stoi(words[1]);
+        
+        getline(fin, lineStr); //37
+
+
     }
 }
