@@ -2,6 +2,7 @@
 #include <cstring>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <algorithm>
 #include <vector>
@@ -25,14 +26,22 @@ int main(int argc, char* argv[]){
 
     const char *spaceChar = " ";
     ifstream inf("ProblemB_case1.txt");
-    string lineStr;
+    
     if(inf){
+        string lineStr;
         while (getline(inf, lineStr)) {
-            cout << lineStr << endl; // 输出每一行内容
             istringstream iss(lineStr);
             vector<string> words;
             string word;
 
+            while(iss>>word){
+                words.push_back(word);
+            }
+            for (const auto& w : words) {
+                cout << w << endl;
+            }
+
+            cout<<"---------------"<<endl;
         }
     }
 }
