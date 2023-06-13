@@ -58,7 +58,6 @@ int main(int argc, char *argv[])
             }
 
             // 一些規格的參數讀入
-<<<<<<< HEAD
             if (words[0] == "NumTechnologies")
             {
                 NumTechnologies = stoi(words[1]);
@@ -85,8 +84,10 @@ int main(int argc, char *argv[])
             }
 
             cout << "---------------" << endl;
-            == == == =
-                         if (words[0] == "NumTechnologies") { NumTechnologies = stoi(words[1]); }
+            if (words[0] == "NumTechnologies")
+            {
+                NumTechnologies = stoi(words[1]);
+            }
             // Tech
             // LibCell
             // Pin
@@ -165,7 +166,6 @@ int main(int argc, char *argv[])
             //     cout << w << endl;
             // }
             // cout<<"---------------"<<endl;
->>>>>>> 50febd0380220440108c4df143fe1dc8dbee87fc
         }
     }
 }
