@@ -33,14 +33,16 @@ typedef struct
 
 class Instance
 {
-    bool isMacro;
-    string libCellName;
-    int libCellSizeX, libCellSizeY, pinCount;
-    Pin *pin;
-    Instance(bool isMacro, string libCellName, int libCellSizeX, int libCellSizeY, int pinCount)
+    string instName;
+    int locationX, locationY, rotate;
+    LibCell libCell;
+    Instance(string instName, string libCellName)
     {
-        int index = stoi(TA[0].Name.erase(0, 2)) - 1;
-        pin = TA[index].pin;
+        int index = stoi(libCellName.erase(0, 2)) - 1;
+        libCell = TA[index];
+        locationX = 0;
+        locationY = 0;
+        rotate = 0;
     }
 };
 
