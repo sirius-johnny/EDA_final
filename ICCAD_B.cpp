@@ -31,21 +31,6 @@ typedef struct
     int pinLocationX, pinLocationY;
 } Pin;
 
-class Instance
-{
-    string instName;
-    int locationX, locationY, rotate;
-    LibCell libCell;
-    Instance(string instName, string libCellName)
-    {
-        int index = stoi(libCellName.erase(0, 2)) - 1;
-        libCell = TA[index];
-        locationX = 0;
-        locationY = 0;
-        rotate = 0;
-    }
-};
-
 struct LibCell
 {
     bool is_Macro;
@@ -57,6 +42,27 @@ struct LibCell
 };
 
 LibCell *TA, *TB;
+
+class Instance
+{
+    public:
+    string instName, libCellName;
+    int locationX, locationY, rotate;
+    bool top;
+    Instance(string instName, string libCellName)
+    {
+        this->instName = instName;
+        this->libCellName = libCellName;
+        top = 0;
+        int index = stoi(libCellName.erase(0, 2)) - 1;
+        locationX = 0;
+        locationY = 0;
+        rotate = 0;
+    }
+    private:
+};
+
+
 
 int main(int argc, char *argv[])
 {
@@ -267,5 +273,33 @@ int main(int argc, char *argv[])
         TerminalCost = stoi(words[1]);
 
         getline(fin, lineStr); // 37
+
+        words.clear();
+        getline(fin, lineStr);
+        istringstream k(lineStr);
+        while (k >> word)
+        {
+            words.push_back(word);
+        }
+        NumInstances = stoi(words[1]);
+        vector<Instance> Inst;
+    
+        for(int i=0; i<NumInstances; i++){
+            words.clear();
+            getline(fin, lineStr);
+            istringstream iss(lineStr);
+            while (iss >> word)
+            {
+                words.push_back(word);
+            }
+            Instance inst(words[1], words[2]);
+            // cout<<"words1="<<words[1]<<" ,words2="<<words[2]<<endl;
+            Inst.push_back(inst);
+            // cout<<inst.instName<<" "<<inst.libCell.Name<<endl;
+        }
+
+        for(int i=0; i<NumInstances; i++){
+            cout<<Inst[i].instName<<" "<<Inst[i].libCellName<<endl;        
+        }
     }
 }
