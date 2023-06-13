@@ -16,8 +16,8 @@ int DieSize_Y;
 int TopDieMaxUtil;
 int BottomDieMaxUtil;
 
-
-int main(int argc, char* argv[]){
+int main(int argc, char *argv[])
+{
     // fstream fin;
     // fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
@@ -26,13 +26,14 @@ int main(int argc, char* argv[]){
     const char *spaceChar = " ";
     ifstream inf("ProblemB_case1.txt");
     string lineStr;
-    if(inf){
-        while (getline(inf, lineStr)) {
+    if (inf)
+    {
+        while (getline(inf, lineStr))
+        {
             cout << lineStr << endl; // 输出每一行内容
             istringstream iss(lineStr);
             vector<string> words;
             string word;
-
         }
     }
 }
