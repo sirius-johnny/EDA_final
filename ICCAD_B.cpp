@@ -25,6 +25,13 @@ int NumNets;
 
 // 其他全域
 
+struct Net
+{
+    int Pin_num;
+    int **Ins_Pin;
+};
+
+
 typedef struct
 {
     string pinName;
@@ -240,7 +247,33 @@ int main(int argc, char *argv[])
             words = split(lineStr, ' ');
             Instance inst(words[1], words[2]);
             Inst.push_back(inst);
-            // cout << &Inst[i] << endl;
+        }
+
+        getline(fin, lineStr); // 47
+
+        getline(fin, lineStr);
+        words = split(lineStr, ' ');
+        NumNets = stoi(words[1]);
+        Net Nets[NumNets];
+        
+        for(int i=0; i<NumNets; i++){
+            getline(fin, lineStr);
+            words = split(lineStr, ' ');
+            Nets[i].Pin_num = stoi(words[2]);
+            // 初始化Ins_Pin
+            Nets[i].Ins_Pin = new int*[Nets[i].Pin_num];
+            for(int j=0; j<Nets[i].Pin_num; j++){
+                Nets[i].Ins_Pin[j] = new int[2];
+            }
+
+            for(int j=0; j<Nets[i].Pin_num; j++){
+                getline(fin, lineStr);
+                words = split(lineStr, ' ');
+                vector<string> cut = split(words[1], '/');
+                Nets[i].Ins_Pin[j][0] = stoi(cut[0].erase(0, 1));
+                Nets[i].Ins_Pin[j][1] = stoi(cut[1].erase(0, 1));
+                // cout<<Nets[i].Ins_Pin[j][0]<<" "<<Nets[i].Ins_Pin[j][1]<<endl;
+            }
         }
     }
 }
