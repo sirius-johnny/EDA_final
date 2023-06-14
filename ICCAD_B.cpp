@@ -47,19 +47,30 @@ class Instance
 {
 public:
     string instName, libCellName;
-    LibCell *libCell;
+    LibCell libCell;
     int locationX, locationY, rotate;
     bool top;
+    int *nets;
     Instance(string instName, string libCellName)
     {
         this->instName = instName;
         this->libCellName = libCellName;
         top = 0;
         int index = stoi(libCellName.erase(0, 2)) - 1;
-        libCell = &TA[index];
+        libCell = TA[index];
+        // cout << &libCell << "  " << &TA[index] << " ";
         locationX = 0;
         locationY = 0;
         rotate = 0;
+        nets = new int[libCell.Pin_count];
+    }
+    void input_nets(int pin, int net)
+    {
+        nets[pin] = net;
+    }
+    void change_top(bool top)
+    {
+        this->top = top;
     }
 
 private:
@@ -80,7 +91,7 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case2.txt", ios::in);
+    fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
 
@@ -228,14 +239,8 @@ int main(int argc, char *argv[])
             getline(fin, lineStr);
             words = split(lineStr, ' ');
             Instance inst(words[1], words[2]);
-            // cout<<"words1="<<words[1]<<" ,words2="<<words[2]<<endl;
             Inst.push_back(inst);
-            // cout << inst.instName << endl;
-        }
-
-        for (int i = 0; i < NumInstances; i++)
-        {
-            // cout << Inst[i].instName << " " << Inst[i].libCellName << endl;
+            // cout << &Inst[i] << endl;
         }
     }
 }
