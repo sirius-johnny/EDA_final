@@ -47,6 +47,7 @@ class Instance
 {
 public:
     string instName, libCellName;
+    LibCell *libCell;
     int locationX, locationY, rotate;
     bool top;
     Instance(string instName, string libCellName)
@@ -55,6 +56,7 @@ public:
         this->libCellName = libCellName;
         top = 0;
         int index = stoi(libCellName.erase(0, 2)) - 1;
+        libCell = &TA[index];
         locationX = 0;
         locationY = 0;
         rotate = 0;
@@ -228,12 +230,12 @@ int main(int argc, char *argv[])
             Instance inst(words[1], words[2]);
             // cout<<"words1="<<words[1]<<" ,words2="<<words[2]<<endl;
             Inst.push_back(inst);
-            // cout<<inst.instName<<" "<<inst.libCell.Name<<endl;
+            // cout << inst.instName << endl;
         }
 
         for (int i = 0; i < NumInstances; i++)
         {
-            cout << Inst[i].instName << " " << Inst[i].libCellName << endl;
+            // cout << Inst[i].instName << " " << Inst[i].libCellName << endl;
         }
     }
 }
