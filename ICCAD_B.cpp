@@ -22,7 +22,7 @@ string TopDieTech, BottomDieTech;
 int TerminalSize_X, TerminalSize_Y, TerminalSpacing, TerminalCost;
 int NumInstances;
 int NumNets;
-
+vector<int> IA, IB;
 // 其他全域
 
 typedef struct
@@ -99,13 +99,18 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
     }
     return result;
 }
+void partition(vector<int> IA, vector<int> IB, vector<Instance> Inst)
+{
+    return;
+}
 int main(int argc, char *argv[])
 {
     fstream fin;
     fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
-
+    vector<Instance> Inst;
+    Net *Nets;
     if (fin)
     {
         string lineStr;
@@ -243,7 +248,6 @@ int main(int argc, char *argv[])
         getline(fin, lineStr);
         words = split(lineStr, ' ');
         NumInstances = stoi(words[1]);
-        vector<Instance> Inst;
 
         for (int i = 0; i < NumInstances; i++)
         {
@@ -258,7 +262,8 @@ int main(int argc, char *argv[])
         getline(fin, lineStr);
         words = split(lineStr, ' ');
         NumNets = stoi(words[1]);
-        Net Nets[NumNets];
+
+        Nets = new Net[NumNets];
 
         for (int i = 0; i < NumNets; i++)
         {
@@ -283,6 +288,6 @@ int main(int argc, char *argv[])
                 Inst[Nets[i].Ins_Pin[j][0]].input_nets(Nets[i].Ins_Pin[j][1], i);
             }
         }
-        cout << Inst[6].nets[1];
     }
+    partition(IA, IB, Inst);
 }
