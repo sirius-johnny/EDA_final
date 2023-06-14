@@ -45,7 +45,7 @@ LibCell *TA, *TB;
 
 class Instance
 {
-    public:
+public:
     string instName, libCellName;
     int locationX, locationY, rotate;
     bool top;
@@ -59,44 +59,48 @@ class Instance
         locationY = 0;
         rotate = 0;
     }
-    private:
+
+private:
 };
 
+const std::vector<std::string> split(const std::string &str, const char &delimiter)
+{
+    std::vector<std::string> result;
+    std::stringstream ss(str);
+    std::string tok;
 
-
+    while (std::getline(ss, tok, delimiter))
+    {
+        result.push_back(tok);
+    }
+    return result;
+}
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case1.txt", ios::in);
+    fin.open("ProblemB_case2.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
 
     if (fin)
     {
         string lineStr;
+        vector<string> words;
+
         // NumTechnologies
         getline(fin, lineStr);
-        NumTechnologies = lineStr[lineStr.length() - 1];
+        words = split(lineStr, ' ');
+        NumTechnologies = words[1];
         // Tech
         getline(fin, lineStr);
-        istringstream iss(lineStr);
-        vector<string> words;
-        string word;
-        while (iss >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         num_LibCell = stoi(words[2]);
         TA = new LibCell[num_LibCell];
         for (int i = 0; i < num_LibCell; i++)
         {
-            words.clear();
+
             getline(fin, lineStr);
-            istringstream iss(lineStr);
-            while (iss >> word)
-            {
-                words.push_back(word);
-            }
+            words = split(lineStr, ' ');
 
             TA[i].is_Macro = (words[1] == "N") ? 0 : 1;
             TA[i].Name = words[2];
@@ -106,13 +110,9 @@ int main(int argc, char *argv[])
             TA[i].pin = new Pin[TA[i].Pin_count];
             for (int j = 0; j < TA[i].Pin_count; j++)
             {
-                words.clear();
+
                 getline(fin, lineStr);
-                istringstream iss(lineStr);
-                while (iss >> word)
-                {
-                    words.push_back(word);
-                }
+                words = split(lineStr, ' ');
                 TA[i].pin[j].pinName = words[1];
                 TA[i].pin[j].pinLocationX = stoi(words[2]);
                 TA[i].pin[j].pinLocationY = stoi(words[3]);
@@ -125,13 +125,9 @@ int main(int argc, char *argv[])
             TB = new LibCell[num_LibCell];
             for (int i = 0; i < num_LibCell; i++)
             {
-                words.clear();
+
                 getline(fin, lineStr);
-                istringstream iss(lineStr);
-                while (iss >> word)
-                {
-                    words.push_back(word);
-                }
+                words = split(lineStr, ' ');
 
                 TB[i].is_Macro = (words[1] == "N") ? 0 : 1;
                 TB[i].Name = words[2];
@@ -141,13 +137,8 @@ int main(int argc, char *argv[])
                 TB[i].pin = new Pin[TB[i].Pin_count];
                 for (int j = 0; j < TB[i].Pin_count; j++)
                 {
-                    words.clear();
                     getline(fin, lineStr);
-                    istringstream iss(lineStr);
-                    while (iss >> word)
-                    {
-                        words.push_back(word);
-                    }
+                    words = split(lineStr, ' ');
                     TB[i].pin[j].pinName = words[1];
                     TB[i].pin[j].pinLocationX = stoi(words[2]);
                     TB[i].pin[j].pinLocationY = stoi(words[3]);
@@ -162,13 +153,8 @@ int main(int argc, char *argv[])
 
         getline(fin, lineStr); // 22
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream a(lineStr);
-        while (a >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         DieSize_LL_X = stoi(words[1]);
         DieSize_LL_Y = stoi(words[2]);
         DieSize_UR_X = stoi(words[3]);
@@ -176,46 +162,26 @@ int main(int argc, char *argv[])
 
         getline(fin, lineStr); // 24
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream b(lineStr);
-        while (b >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         TopDieMaxUtil = stoi(words[1]);
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream c(lineStr);
-        while (c >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         BottomDieMaxUtil = stoi(words[1]);
 
         getline(fin, lineStr); // 27
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream d(lineStr);
-        while (d >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         TopDieRows_X = stoi(words[1]);
         TopDieRows_Y = stoi(words[2]);
         TopDieRows_row_len = stoi(words[3]);
         TopDieRows_row_height = stoi(words[4]);
         TopDieRows_repeat_count = stoi(words[5]);
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream e(lineStr);
-        while (e >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         BottomDieRows_X = stoi(words[1]);
         BottomDieRows_Y = stoi(words[2]);
         BottomDieRows_row_len = stoi(words[3]);
@@ -224,82 +190,50 @@ int main(int argc, char *argv[])
 
         getline(fin, lineStr); // 30
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream f(lineStr);
-        while (f >> word)
-        {
-            words.push_back(word);
-        }
+
+        words = split(lineStr, ' ');
         TopDieTech = words[1];
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream g(lineStr);
-        while (g >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         BottomDieTech = words[1];
 
         getline(fin, lineStr); // 33
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream h(lineStr);
-        while (h >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         TerminalSize_X = stoi(words[1]);
         TerminalSize_Y = stoi(words[2]);
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream i(lineStr);
-        while (i >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         TerminalSpacing = stoi(words[1]);
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream j(lineStr);
-        while (j >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         TerminalCost = stoi(words[1]);
 
         getline(fin, lineStr); // 37
 
-        words.clear();
         getline(fin, lineStr);
-        istringstream k(lineStr);
-        while (k >> word)
-        {
-            words.push_back(word);
-        }
+        words = split(lineStr, ' ');
         NumInstances = stoi(words[1]);
         vector<Instance> Inst;
-    
-        for(int i=0; i<NumInstances; i++){
-            words.clear();
+
+        for (int i = 0; i < NumInstances; i++)
+        {
             getline(fin, lineStr);
-            istringstream iss(lineStr);
-            while (iss >> word)
-            {
-                words.push_back(word);
-            }
+            words = split(lineStr, ' ');
             Instance inst(words[1], words[2]);
             // cout<<"words1="<<words[1]<<" ,words2="<<words[2]<<endl;
             Inst.push_back(inst);
             // cout<<inst.instName<<" "<<inst.libCell.Name<<endl;
         }
 
-        for(int i=0; i<NumInstances; i++){
-            cout<<Inst[i].instName<<" "<<Inst[i].libCellName<<endl;        
+        for (int i = 0; i < NumInstances; i++)
+        {
+            cout << Inst[i].instName << " " << Inst[i].libCellName << endl;
         }
     }
 }
