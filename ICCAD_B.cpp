@@ -57,12 +57,13 @@ public:
     int locationX, locationY, rotate;
     bool top;
     int *nets;
+    int index;
     Instance(string instName, string libCellName)
     {
         this->instName = instName;
         this->libCellName = libCellName;
         top = 0;
-        int index = stoi(libCellName.erase(0, 2)) - 1;
+        index = stoi(libCellName.erase(0, 2)) - 1;
         libCell = TA[index];
         // cout << &libCell << "  " << &TA[index] << " ";
         locationX = 0;
@@ -77,6 +78,10 @@ public:
     void change_top(bool top)
     {
         this->top = top;
+        if (top)
+            libCell = TA[index];
+        else
+            libCell = TB[index];
     }
 
 private:
