@@ -25,12 +25,11 @@ int NumNets;
 
 // 其他全域
 
-struct Net
+typedef struct
 {
     int Pin_num;
     int **Ins_Pin;
-};
-
+} Net;
 
 typedef struct
 {
@@ -255,25 +254,30 @@ int main(int argc, char *argv[])
         words = split(lineStr, ' ');
         NumNets = stoi(words[1]);
         Net Nets[NumNets];
-        
-        for(int i=0; i<NumNets; i++){
+
+        for (int i = 0; i < NumNets; i++)
+        {
             getline(fin, lineStr);
             words = split(lineStr, ' ');
             Nets[i].Pin_num = stoi(words[2]);
             // 初始化Ins_Pin
-            Nets[i].Ins_Pin = new int*[Nets[i].Pin_num];
-            for(int j=0; j<Nets[i].Pin_num; j++){
+            Nets[i].Ins_Pin = new int *[Nets[i].Pin_num];
+            for (int j = 0; j < Nets[i].Pin_num; j++)
+            {
                 Nets[i].Ins_Pin[j] = new int[2];
             }
 
-            for(int j=0; j<Nets[i].Pin_num; j++){
+            for (int j = 0; j < Nets[i].Pin_num; j++)
+            {
                 getline(fin, lineStr);
                 words = split(lineStr, ' ');
                 vector<string> cut = split(words[1], '/');
-                Nets[i].Ins_Pin[j][0] = stoi(cut[0].erase(0, 1));
-                Nets[i].Ins_Pin[j][1] = stoi(cut[1].erase(0, 1));
-                // cout<<Nets[i].Ins_Pin[j][0]<<" "<<Nets[i].Ins_Pin[j][1]<<endl;
+                Nets[i].Ins_Pin[j][0] = stoi(cut[0].erase(0, 1)) - 1;
+                Nets[i].Ins_Pin[j][1] = stoi(cut[1].erase(0, 1)) - 1;
+                // cout << Nets[i].Ins_Pin[j][0] << " " << Nets[i].Ins_Pin[j][1] << endl;
+                Inst[Nets[i].Ins_Pin[j][0]].input_nets(Nets[i].Ins_Pin[j][1], i);
             }
         }
+        cout << Inst[6].nets[1];
     }
 }
