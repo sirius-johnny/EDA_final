@@ -1,0 +1,488 @@
+16a17
+> //double stepScaling = 0.2;
+17a19,20
+> //double truncationFactor = 1.25;
+> //double truncationFactor = 0.5;
+24c27
+< double time_wl = 0;
+---
+> double time_lse = 0;
+26c29
+< double time_grad_wl = 0;
+---
+> double time_grad_lse = 0;
+29a33,34
+> double time_exp = 0;
+> double time_sum_exp = 0;
+35a41,173
+> /*
+> void MyNLP::CreateExpTable()
+> {
+>     _expTablePrecision = 20000000;            // 20M * 8byte = 160M table
+>     _expTable.resize( _expTablePrecision+1 );    
+> 
+>     double minValue = 1e10;
+>     double maxValue = -1e10;
+>     for( unsigned int i=0; i<m_pDB->m_modules.size(); i++ )	
+>     {
+> 	if( m_pDB->m_modules[i].m_cx > maxValue )     maxValue =  m_pDB->m_modules[i].m_cx;
+> 	if( m_pDB->m_modules[i].m_cy > maxValue )     maxValue =  m_pDB->m_modules[i].m_cy;
+> 	if( m_pDB->m_modules[i].m_cx < minValue )     minValue =  m_pDB->m_modules[i].m_cx;
+> 	if( m_pDB->m_modules[i].m_cy < minValue )     minValue =  m_pDB->m_modules[i].m_cy;
+>     }
+>     if( m_pDB->m_coreRgn.left   < minValue )    minValue = m_pDB->m_coreRgn.left;
+>     if( m_pDB->m_coreRgn.bottom < minValue )    minValue = m_pDB->m_coreRgn.bottom;
+>     if( m_pDB->m_coreRgn.top    > maxValue )    maxValue = m_pDB->m_coreRgn.top;
+>     if( m_pDB->m_coreRgn.right  > maxValue )    maxValue = m_pDB->m_coreRgn.right;
+>   
+>     maxValue /= _alpha;
+>     minValue /= _alpha;
+> 
+>     
+>     // TODO: check boundary
+> //    if( minValue < 0.0 )
+> //        minValue = 0.0;
+>    
+>     // TODO: maxValue < 0
+>     
+>     double step = ( maxValue - minValue ) / (_expTablePrecision);
+>     printf( " exp table: min %f(*alpha=%f)  max %f(*alpha=%f)  step %f\n", 
+> 	    minValue, minValue*_alpha,
+> 	    maxValue, maxValue*_alpha, 
+> 	    step );
+>     for( int i=0; i<_expTablePrecision+1; i++ )
+>     {
+> 	_expTable[i] = exp( minValue + step * i ); 
+>     }
+>     _expTableMin = minValue;
+>     _expTableMax = maxValue;
+>     _expTableStep = step;
+>     //printf( "table[100] = %.10f\n", _expTable[100] );
+>     //printf( "exp(minValue+100*step) = %.10f\n", exp(minValue+step*100 ) );
+> 
+> }
+> */
+> 
+> /*
+> double MyNLP::expTable( const double& value )
+> {
+>     double t_start = seconds();
+> 
+>     // TEST PRECISION && RUNTIME
+>     double res = exp(value);
+>     time_exp += seconds() - t_start; 
+>     return res;
+> 
+> 
+> 
+>     
+> //    double absValue = fabs( value );
+>     double absValue = value;
+>     
+>     // BOUNDARY CHECK START =====================
+>     if( absValue < _expTableMin )
+>     {
+> 	printf( "ERROR! value= %f (%f) min= %f\n", value, value*_alpha, _expTableMin );
+>     }
+>     if( absValue > _expTableMax )
+>     {
+> //	printf( "WARNING! value= %f (%f) max= %f\n", value, value*_alpha, this->_expTableMax );
+> 	return exp( value );
+>     }
+>     //assert( absValue >= _expTableMin );
+>     //assert( absValue <= _expTableMax );
+>     // BOUNDARY CHECK END =======================
+>     
+>     
+>     // BACK LOOKUP 
+>     //int index1 = static_cast<int>( ceil( (value - _expTableMin) / _expTableStep ) );
+>     //return _expTable[index1];		// 1% err
+> 
+>     // INTERPOLATION
+>     int index1 = static_cast<int>( floor( (absValue - _expTableMin) / _expTableStep ) );
+>     int index2 = index1 + 1 ;
+>     //assert( value >= _expTableMin + index1 * _expTableStep );
+>     //assert( value <  _expTableMin + index2 * _expTableStep );
+> 
+>     double diff = absValue - ( _expTableMin + index1 * _expTableStep );
+>     //assert( diff >= 0 );
+>     //assert( diff - _expTableStep <= 0 );
+>      
+>     double pos = _expTable[index1] + 
+> 	   (_expTable[index2] - _expTable[index1]) * (diff) / _expTableStep;
+> 
+>     time_exp += seconds() - t_start; 
+> //    if( value > 0 )
+> 	return pos;
+> //    else
+> //	return 1.0 / pos;
+> }
+> */
+> 
+> /*
+> void MyNLP::CheckExpTablePrecision()
+> {
+>     double maxValue = 1500 / _alpha;
+>     double step = 0.0000001;
+>     double diff = 0.0;
+>     for( double i=-maxValue; i<maxValue; i+=step )
+>     {
+> 	double e1 = expTable( i );
+> 	double e2 = exp(i);
+> 	//printf( "e2 = %f   e1 = %f   diff = %f\n", e2, e1, e2-e1 );
+> 	diff += (e2-e1)*(e2-e1);
+>     }
+>     printf( "CheckExpTablePrecision %f-%f %f err= %g\n", -maxValue, maxValue, step, diff );
+>     
+>     double t1 = seconds();
+>     double e1;
+>     for( double i=-maxValue; i<maxValue; i+=step )
+> 	e1 = expTable( i );
+>     t1 = seconds() - t1;
+>     double t2 = seconds();
+>     for( double i=-maxValue; i<maxValue; i+=step )
+> 	e1 = exp( i );
+>     t2 = seconds() - t2;
+>     printf( "time_compare = %f %f\n", t1, t2 );
+> }
+> */
+> 
+> 
+59,71d196
+< 
+<     // scale between 0 to 10
+<     const double range = 10.0;
+<     if( m_pDB->m_coreRgn.right > m_pDB->m_coreRgn.top )
+<     {
+<     	//printf( "right > top\n" );
+<     	m_posScale = range / m_pDB->m_coreRgn.right;
+<     }
+<     else
+<     {
+<     	//printf( "right < top\n" );
+<     	m_posScale = range / m_pDB->m_coreRgn.top;
+<     }
+72a198,202
+>     //alpha = 3; //m_pDB->m_rowHeight * 20;
+>     //_weightDensity = 0.01;
+>     //_weightWire    = 1000.0;
+>     //m_potentialGridSize      = 1000;
+> 
+73a204
+>     
+76a208,209
+>     //xBak     = new double [ 2 * m_pDB->m_modules.size() ];	// for stop checking (UNUSE NOW)
+>     //xBak2    = new double [ 2 * m_pDB->m_modules.size() ];	// for line search  (UNUSE NOW)
+90,98d222
+<     m_nets_sum_p_x_pos.resize( m_pDB->m_nets.size(), 0 );
+<     m_nets_sum_p_y_pos.resize( m_pDB->m_nets.size(), 0 );
+<     m_nets_sum_p_inv_x_pos.resize( m_pDB->m_nets.size(), 0 );
+<     m_nets_sum_p_inv_y_pos.resize( m_pDB->m_nets.size(), 0 );
+<     m_nets_sum_p_x_neg.resize( m_pDB->m_nets.size(), 0 );
+<     m_nets_sum_p_y_neg.resize( m_pDB->m_nets.size(), 0 );
+<     m_nets_sum_p_inv_x_neg.resize( m_pDB->m_nets.size(), 0 );
+<     m_nets_sum_p_inv_y_neg.resize( m_pDB->m_nets.size(), 0 );
+< 
+101a226,249
+>     /*
+>     m_totalMovableModuleArea = 0;
+>     m_totalFixedModuleArea = 0;
+>     for( unsigned int i=0; i<m_pDB->m_modules.size(); i++ )
+>     {
+> 	if( m_pDB->m_modules[i].m_isFixed == false )
+> 	    m_totalMovableModuleArea += m_pDB->m_modules[i].m_area;
+> 	else
+> 	{
+> 	    if( m_pDB->m_modules[i].m_isOutCore == false )
+> 	    {
+> 		m_totalFixedModuleArea += 
+> 		    getOverlap( m_pDB->m_coreRgn.left, m_pDB->m_coreRgn.right,
+> 			    m_pDB->m_modules[i].m_x, m_pDB->m_modules[i].m_x + m_pDB->m_modules[i].m_width ) *
+> 		    getOverlap( m_pDB->m_coreRgn.bottom, m_pDB->m_coreRgn.top,
+> 			    m_pDB->m_modules[i].m_y, m_pDB->m_modules[i].m_y + m_pDB->m_modules[i].m_height ); 
+> 	    }	
+> 	}
+>     }
+>     if( param.bShow )
+> 	printf( "Total movable area %.0f, fixed area %.0f\n", 
+> 		m_totalMovableModuleArea, m_totalFixedModuleArea );
+>     */
+>     
+107a256,257
+>     //delete [] xBak;
+>     //delete [] xBak2;
+195c345,347
+< 	_alpha = param.dLpNorm_P;
+---
+> 	//_alpha = 0.5 * m_potentialGridWidth; // according to APlace ispd04
+> 	_alpha = ( m_pDB->m_coreRgn.right - m_pDB->m_coreRgn.left ) * 0.005;	// as small as possible
+> 	//printf( "GRID = %d (alpha = %f) width = %.2f\n", m_potentialGridSize, _alpha, ( m_pDB->m_coreRgn.right - m_pDB->m_coreRgn.left )/m_potentialGridSize );
+221a374
+> 	printf( "Time Sum-Exp      = %.1f sec\n", time_sum_exp );
+223c376
+< 	printf( "Time eval_f       = %.2f sec = (WL) %.2f + (P)%.2f\n", time_f, time_wl, time_update_grid );
+---
+> 	printf( "Time eval_f       = %.2f sec = (WL) %.2f + (P)%.2f\n", time_f, time_lse, time_update_grid );
+225c378
+< 		time_grad_f, time_grad_wl, time_grad_potential );
+---
+> 		time_grad_f, time_grad_lse, time_grad_potential );
+389c542
+<     totalWL = GetWL( n, x, _expX, _alpha );
+---
+>     totalWL = GetLogSumExpWL( n, x, _expX, _alpha );
+665c818
+< 	    time_grad_wl += seconds() - time_used;
+---
+> 	    time_grad_lse += seconds() - time_used;
+1186c1339
+< void MyNLP::UpdateExpValueForEachCell( const int& n, const double* x, double* expX, const double& inAlpha)
+---
+> void MyNLP::UpdateExpValueForEachCell( const int& n, const double* x, double* expX, const double& inAlpha )
+1190,1192c1343,1349
+<         expX[i] = pow( x[i] * m_posScale, inAlpha );
+<         //expX[i] = myPowPos128( x[i] * pNLP->m_posScale );
+<         //            //assert( x[i] != 0 );
+---
+> 	expX[i] = exp( x[i] / inAlpha );
+> 	//expX[i] = expTable( x[i] / inAlpha );
+> 	/*if( expX[i] == 0 )
+> 	{
+> 	    printf( "ERR x[i] %f alpha %f \n", x[i], inAlpha );
+> 	}
+> 	assert( expX[i] != 0 );*/
+1208,1211c1365,1366
+<         expPins[2*pinId]   = pow( xx * m_posScale, inAlpha );
+<         expPins[2*pinId+1] = pow( yy * m_posScale, inAlpha );
+< 	assert( expPins[2*pinId] != 0 );
+< 	assert( expPins[2*pinId+1] != 0 );
+---
+> 	expPins[2*pinId]   = exp( xx / inAlpha );
+> 	expPins[2*pinId+1] = exp( yy / inAlpha );
+1225,1240d1379
+<         if( m_pDB->m_nets[n].size() == 0 )
+<             continue;
+<         calc_sum_exp_using_pin(
+<                 m_pDB->m_nets[n].begin(), m_pDB->m_nets[n].end(), x, expX,
+<                 sum_exp_xi_over_alpha, sum_exp_inv_xi_over_alpha,
+<                 sum_exp_yi_over_alpha, sum_exp_inv_yi_over_alpha
+<                 );
+< 
+<         m_nets_sum_exp_xi_over_alpha[n]     = sum_exp_xi_over_alpha;
+<         m_nets_sum_exp_yi_over_alpha[n]     = sum_exp_yi_over_alpha;
+<         m_nets_sum_exp_inv_xi_over_alpha[n] = sum_exp_inv_xi_over_alpha;
+<         m_nets_sum_exp_inv_yi_over_alpha[n] = sum_exp_inv_yi_over_alpha;
+<     }
+< 
+<     for( unsigned int n=0; n<m_pDB->m_nets.size(); n++ )
+<     {
+1243,1294c1382,1390
+<         m_nets_sum_p_x_pos[n]     = pow( m_nets_sum_exp_xi_over_alpha[n], 1/_alpha-1 );
+<         m_nets_sum_p_y_pos[n]     = pow( m_nets_sum_exp_yi_over_alpha[n], 1/_alpha-1 );
+<         m_nets_sum_p_inv_x_pos[n] = pow( m_nets_sum_exp_inv_xi_over_alpha[n], 1/_alpha-1 );
+<         m_nets_sum_p_inv_y_pos[n] = pow( m_nets_sum_exp_inv_yi_over_alpha[n], 1/_alpha-1 );
+<         m_nets_sum_p_x_neg[n]     = pow( m_nets_sum_exp_xi_over_alpha[n], -1/_alpha-1 );
+<         m_nets_sum_p_y_neg[n]     = pow( m_nets_sum_exp_yi_over_alpha[n], -1/_alpha-1 );
+<         m_nets_sum_p_inv_x_neg[n] = pow( m_nets_sum_exp_inv_xi_over_alpha[n], -1/_alpha-1 );
+<         m_nets_sum_p_inv_y_neg[n] = pow( m_nets_sum_exp_inv_yi_over_alpha[n], -1/_alpha-1 );
+< 
+<     }
+< }
+< 
+< void MyNLP::calc_sum_exp_using_pin(
+< 		const vector<int>::const_iterator& begin, const vector<int>::const_iterator& end,
+< 		const double* x, const double* expX,
+< 		double& sum_exp_xi_over_alpha, double& sum_exp_inv_xi_over_alpha,
+< 		double& sum_exp_yi_over_alpha, double& sum_exp_inv_yi_over_alpha, int id
+< 		)
+< {
+<     sum_exp_xi_over_alpha = 0;
+<     sum_exp_inv_xi_over_alpha = 0;
+<     sum_exp_yi_over_alpha = 0;
+<     sum_exp_inv_yi_over_alpha = 0;
+< 
+<     vector<int>::const_iterator ite;
+<     int pinId;
+<     int blockId;
+<     for( ite=begin; ite!=end; ++ite )
+<     {
+<  	// for each pin of the net
+< 	pinId   = *ite;
+< 	blockId = m_pDB->m_pins[ pinId ].moduleId;
+< 
+< 	if( m_usePin[blockId] /*&& blockId != id*/ )  // macro or self pin
+< 		//if( blockId != id )
+< 	{
+< 	    // handle pins
+< 	    sum_exp_xi_over_alpha     += _expPins[ 2*pinId ];
+< 	    sum_exp_inv_xi_over_alpha += 1.0 / _expPins[ 2*pinId ];
+< 	    sum_exp_yi_over_alpha     += _expPins[ 2*pinId+1 ];
+< 	    sum_exp_inv_yi_over_alpha += 1.0 / _expPins[ 2*pinId+1 ];
+< 	}
+< 	else
+< 	{
+< 	    // use block center
+< 	    //assert( expX[2*blockId] != 0);
+< 	    //assert( expX[2*blockId+1] != 0 );
+< 	    sum_exp_xi_over_alpha     += _expX[2*blockId];
+< 	    sum_exp_inv_xi_over_alpha += 1.0 / _expX[2*blockId];
+< 	    sum_exp_yi_over_alpha     += _expX[2*blockId+1];
+< 	    sum_exp_inv_yi_over_alpha += 1.0 / _expX[2*blockId+1];
+< 	}
+---
+> 	calc_sum_exp_using_pin(
+> 		m_pDB->m_nets[n].begin(), m_pDB->m_nets[n].end(), x, expX,
+> 		sum_exp_xi_over_alpha, sum_exp_inv_xi_over_alpha,
+> 		sum_exp_yi_over_alpha, sum_exp_inv_yi_over_alpha );
+> 	
+> 	m_nets_sum_exp_xi_over_alpha[n]     = sum_exp_xi_over_alpha;
+> 	m_nets_sum_exp_yi_over_alpha[n]     = sum_exp_yi_over_alpha;
+> 	m_nets_sum_exp_inv_xi_over_alpha[n] = sum_exp_inv_xi_over_alpha;
+> 	m_nets_sum_exp_inv_yi_over_alpha[n] = sum_exp_inv_yi_over_alpha;
+1296d1391
+< 
+1299c1394
+< double MyNLP::GetWL( const int& n, const double* x, const double* expX, const double& alpha )
+---
+> double MyNLP::GetLogSumExpWL( const int& n, const double* x, const double* expX, const double& alpha )
+1307,1312c1402,1421
+<         double invAlpha = 1.0 / _alpha;
+<         totalWL +=
+<             pow( m_nets_sum_exp_xi_over_alpha[n], invAlpha ) -
+<             pow( m_nets_sum_exp_inv_xi_over_alpha[n], -invAlpha ) +
+<             pow( m_nets_sum_exp_yi_over_alpha[n], invAlpha ) -
+<             pow( m_nets_sum_exp_inv_yi_over_alpha[n], -invAlpha );
+---
+> 	totalWL += alpha * ( log( m_nets_sum_exp_xi_over_alpha[n] ) +	    // max(x)
+> 		             log( m_nets_sum_exp_inv_xi_over_alpha[n] ) +	    // -min(x)
+> 		             log( m_nets_sum_exp_yi_over_alpha[n] ) +	    // max(y)
+> 		             log( m_nets_sum_exp_inv_yi_over_alpha[n] ) );    // -min(y)
+> /*
+> 	calc_sum_exp_using_pin(  
+> 		m_pDB->m_nets[n].begin(), m_pDB->m_nets[n].end(), x, expX,
+> 		sum_exp_xi_over_alpha, sum_exp_inv_xi_over_alpha,
+> 		sum_exp_yi_over_alpha, sum_exp_inv_yi_over_alpha );
+> 
+> 	//assert( sum_exp_xi_over_alpha > 0 );
+> 	//assert( sum_exp_yi_over_alpha > 0 );
+> 	//assert( sum_exp_inv_xi_over_alpha > 0 );
+> 	//assert( sum_exp_inv_yi_over_alpha > 0 );
+> 	
+> 	totalWL += alpha * ( log( sum_exp_xi_over_alpha ) +	    // max(x)
+> 		             log( sum_exp_inv_xi_over_alpha ) +	    // -min(x)
+> 		             log( sum_exp_yi_over_alpha ) +	    // max(y)
+> 		             log( sum_exp_inv_yi_over_alpha ) );    // -min(y)	
+> */
+1314c1423
+<     return totalWL / m_posScale;
+---
+>     return totalWL;
+1322,1323c1431,1432
+<     totalWL = GetWL( n, x, expX, _alpha );
+<     time_wl += seconds() - time_start;
+---
+>     totalWL = GetLogSumExpWL( n, x, expX, _alpha );
+>     time_lse += seconds() - time_start;
+1341c1450
+<     time_wl += seconds() - time_start;
+---
+>     time_lse += seconds() - time_start;
+1433,1444c1542,1548
+< 	    {
+< 		double xx = x[ 2*i ]   + m_pDB->m_pins[ selfPinId ].xOff;
+< 		double yy = x[ 2*i+1 ] + m_pDB->m_pins[ selfPinId ].yOff;
+< 		xx *= m_posScale;
+< 		yy *= m_posScale;
+< 
+< 		grad_wire[ 2*i ] +=
+<                     m_nets_sum_p_x_pos[netId]     * _expPins[2*selfPinId] / xx -
+<                     m_nets_sum_p_inv_x_neg[netId] / _expPins[2*selfPinId] / xx;
+< 		grad_wire[ 2*i+1 ] +=
+<                     m_nets_sum_p_y_pos[netId]     * _expPins[2*selfPinId+1] / yy -
+<                     m_nets_sum_p_inv_y_neg[netId] / _expPins[2*selfPinId+1] / yy;
+---
+> 	    {	    
+> 		grad_wire[ 2*i ] += 
+> 		    _expPins[ 2*selfPinId ] / m_nets_sum_exp_xi_over_alpha[netId] -
+> 		    1.0 / _expPins[ 2*selfPinId ] / m_nets_sum_exp_inv_xi_over_alpha[netId];
+> 		grad_wire[ 2*i+1 ] += 
+> 		    _expPins[ 2*selfPinId+1 ] / m_nets_sum_exp_yi_over_alpha[netId] -
+> 		    1.0 / _expPins[ 2*selfPinId+1 ] / m_nets_sum_exp_inv_yi_over_alpha[netId];
+1448,1458c1552,1557
+< 		double xx = x[ 2*i ];
+< 		double yy = x[ 2*i+1 ];
+< 		xx *= m_posScale;
+< 		yy *= m_posScale;
+< 
+<                 grad_wire[ 2*i ] +=
+<                     m_nets_sum_p_x_pos[netId]     * _expX[4*i] / xx  -
+<                     m_nets_sum_p_inv_x_neg[netId] / _expX[2*i] / xx;
+<                 grad_wire[ 2*i+1 ] +=
+<                     m_nets_sum_p_y_pos[netId]     * _expX[2*i+1] / yy -
+<                     m_nets_sum_p_inv_y_neg[netId] / _expX[2*i+1] / yy;
+---
+> 		grad_wire[ 2*i ] += 
+> 		    expX[2*i] / m_nets_sum_exp_xi_over_alpha[netId] -
+> 		    1.0 / expX[2*i] / m_nets_sum_exp_inv_xi_over_alpha[netId];
+> 		grad_wire[ 2*i+1 ] += 
+> 		    expX[2*i+1] / m_nets_sum_exp_yi_over_alpha[netId] -
+> 		    1.0 / expX[2*i+1] / m_nets_sum_exp_inv_yi_over_alpha[netId];
+1463c1562,1564
+<     time_grad_wl += seconds() - time_used;
+---
+>     time_grad_lse += seconds() - time_used;
+>    
+> 
+1631a1733,1784
+> 
+> void MyNLP::calc_sum_exp_using_pin( 
+> 	const vector<int>::const_iterator& begin, const vector<int>::const_iterator& end,
+> 	const double* x, const double* expX,
+> 	double& sum_exp_xi_over_alpha, double& sum_exp_inv_xi_over_alpha,
+> 	double& sum_exp_yi_over_alpha, double& sum_exp_inv_yi_over_alpha, int id )
+> {
+>     double t_start = seconds();
+>     
+>     sum_exp_xi_over_alpha = 0;
+>     sum_exp_inv_xi_over_alpha = 0;
+>     sum_exp_yi_over_alpha = 0;
+>     sum_exp_inv_yi_over_alpha = 0;
+> 
+>     vector<int>::const_iterator ite;
+>     int pinId;
+>     int blockId;
+>     for( ite=begin; ite!=end; ++ite )
+>     {
+> 	// for each pin of the net
+> 	pinId   = *ite;
+> 	blockId = m_pDB->m_pins[ pinId ].moduleId;
+> 	
+> 	/*sum_exp_xi_over_alpha     += expX[2*blockId];
+> 	sum_exp_inv_xi_over_alpha += 1.0 / expX[2*blockId];
+> 	sum_exp_yi_over_alpha     += expX[2*blockId+1];
+> 	sum_exp_inv_yi_over_alpha += 1.0 / expX[2*blockId+1];
+> 	*/
+> #if 1
+> 	if( m_usePin[blockId] /*&& blockId != id*/ )	// macro or self pin
+> 	//if( blockId != id )	
+> 	{
+> 	    // handle pins
+> 	    sum_exp_xi_over_alpha     += _expPins[ 2*pinId ];
+> 	    sum_exp_inv_xi_over_alpha += 1.0 / _expPins[ 2*pinId ];
+> 	    sum_exp_yi_over_alpha     += _expPins[ 2*pinId+1 ];
+> 	    sum_exp_inv_yi_over_alpha += 1.0 / _expPins[ 2*pinId+1 ];
+> 	}
+> 	else
+> 	{
+> 	    // use block center
+> 	    //assert( expX[2*blockId] != 0);
+> 	    //assert( expX[2*blockId+1] != 0 );
+> 	    sum_exp_xi_over_alpha     += expX[2*blockId];
+> 	    sum_exp_inv_xi_over_alpha += 1.0 / expX[2*blockId];
+> 	    sum_exp_yi_over_alpha     += expX[2*blockId+1];
+> 	    sum_exp_inv_yi_over_alpha += 1.0 / expX[2*blockId+1];
+> 	}
+> #endif
+>     }
+>     time_sum_exp += seconds() - t_start;
+> } 
