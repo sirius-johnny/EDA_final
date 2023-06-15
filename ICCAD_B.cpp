@@ -22,7 +22,9 @@ string TopDieTech, BottomDieTech;
 int TerminalSize_X, TerminalSize_Y, TerminalSpacing, TerminalCost;
 int NumInstances;
 int NumNets;
+// partition
 vector<int> IA, IB;
+int max_size = 0;
 // 其他全域
 
 typedef struct
@@ -58,18 +60,25 @@ public:
     bool top;
     int *nets;
     int index;
+    int gain, size;
     Instance(string instName, string libCellName)
     {
         this->instName = instName;
         this->libCellName = libCellName;
         top = 0;
         index = stoi(libCellName.erase(0, 2)) - 1;
-        libCell = TA[index];
+        libCell = TB[index];
         // cout << &libCell << "  " << &TA[index] << " ";
         locationX = 0;
         locationY = 0;
         rotate = 0;
         nets = new int[libCell.Pin_count];
+        for (int i = 0; i < libCell.Pin_count; i++)
+        {
+            nets[i] = -1;
+        }
+        gain = 0;
+        size = libCell.size_X * libCell.size_Y;
     }
     void input_nets(int pin, int net)
     {
@@ -116,10 +125,7 @@ void split_half(vector<Instance> Inst)
     }
     return;
 }
-void partition(vector<Instance> Inst)
-{
-    return;
-}
+
 void print_set()
 {
     cout << "IA: ";
@@ -134,6 +140,16 @@ void print_set()
         cout << IB[i] << " ";
     }
     cout << endl;
+    return;
+}
+void initialize_gain(vector<Instance> Inst, Net *Nets)
+{
+
+    return;
+}
+void partition(vector<Instance> Inst)
+{
+    return;
 }
 int main(int argc, char *argv[])
 {
@@ -183,6 +199,8 @@ int main(int argc, char *argv[])
                 TA[i].pin[j].pinLocationX = stoi(words[2]);
                 TA[i].pin[j].pinLocationY = stoi(words[3]);
             }
+            if (TA[i].size_X * TA[i].size_Y > max_size)
+                max_size = TA[i].size_X * TA[i].size_Y;
         }
 
         if (NumTechnologies == "2")
@@ -329,4 +347,12 @@ int main(int argc, char *argv[])
     split_half(Inst);
     partition(Inst);
     print_set();
+    // initialize_gain(Inst, Nets);
+    // for (int i = 0; i < Inst.size(); i++)
+    // {
+    //     for (int j = 0; j < Inst[i].libCell.Pin_count; j++)
+    //     {
+    //         cout << " " << Inst[i].nets[i];
+    //     }
+    // }
 }
