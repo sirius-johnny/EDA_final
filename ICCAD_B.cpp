@@ -120,6 +120,21 @@ void partition(vector<Instance> Inst)
 {
     return;
 }
+void print_set()
+{
+    cout << "IA: ";
+    for (int i = 0; i < IA.size(); i++)
+    {
+        cout << IA[i] << " ";
+    }
+    cout << endl
+         << "IB: ";
+    for (int i = 0; i < IB.size(); i++)
+    {
+        cout << IB[i] << " ";
+    }
+    cout << endl;
+}
 int main(int argc, char *argv[])
 {
     fstream fin;
@@ -313,4 +328,5 @@ int main(int argc, char *argv[])
     }
     split_half(Inst);
     partition(Inst);
+    print_set();
 }
