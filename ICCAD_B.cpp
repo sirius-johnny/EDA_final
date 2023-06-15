@@ -99,6 +99,20 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
     }
     return result;
 }
+void split_half(vector<int> IA, vector<int> IB, vector<Instance> Inst)
+{
+    for (int i = 0; i < Inst.size(); i++)
+    {
+        if (i % 2 == 0)
+        {
+            Inst[i].change_top(1);
+            IA.push_back(i);
+        }
+        else
+            IB.push_back(i);
+    }
+    return;
+}
 void partition(vector<int> IA, vector<int> IB, vector<Instance> Inst)
 {
     return;
@@ -111,7 +125,12 @@ int main(int argc, char *argv[])
     // fout.open("o.txt", ios::out);
     vector<Instance> Inst;
     Net *Nets;
-    if (fin)
+    if (!fin)
+    {
+        cout << "input error";
+        return 1;
+    }
+    else
     {
         string lineStr;
         vector<string> words;
@@ -289,5 +308,6 @@ int main(int argc, char *argv[])
             }
         }
     }
+    split_half(IA, IB, Inst);
     partition(IA, IB, Inst);
 }
