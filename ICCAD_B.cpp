@@ -95,7 +95,8 @@ public:
 
 private:
 };
-
+vector<Instance> Inst;
+Net *Nets;
 const std::vector<std::string> split(const std::string &str, const char &delimiter)
 {
     std::vector<std::string> result;
@@ -108,9 +109,9 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
     }
     return result;
 }
-void split_half(vector<Instance> Inst)
+void split_half()
 {
-    for (int i = 0; i < Inst.size(); i++)
+    for (int i = 0; i < NumInstances; i++)
     {
         if (i % 2 == 0)
         {
@@ -142,12 +143,46 @@ void print_set()
     cout << endl;
     return;
 }
-void initialize_gain(vector<Instance> Inst, Net *Nets)
+void initialize_gain()
 {
-
+    for (int i = 0; i < NumNets; i++)
+    {
+        int NA = 0;
+        int NB = 0;
+        for (int j = 0; j < Nets[i].Pin_num; j++)
+        {
+            if (Inst[Nets[i].Ins_Pin[j][0]].top)
+                NA++;
+            else
+                NB++;
+        }
+        if ((NA == 0) || (NB == 0))
+        {
+            for (int j = 0; j < Nets[i].Pin_num; j++)
+            {
+                Inst[Nets[i].Ins_Pin[j][0]].gain -= 1;
+            }
+        }
+        if (NA == 1)
+        {
+            for (int j = 0; j < Nets[i].Pin_num; j++)
+            {
+                if (Inst[Nets[i].Ins_Pin[j][0]].top)
+                    Inst[Nets[i].Ins_Pin[j][0]].gain += 1;
+            }
+        }
+        if (NB == 1)
+        {
+            for (int j = 0; j < Nets[i].Pin_num; j++)
+            {
+                if (!Inst[Nets[i].Ins_Pin[j][0]].top)
+                    Inst[Nets[i].Ins_Pin[j][0]].gain += 1;
+            }
+        }
+    }
     return;
 }
-void partition(vector<Instance> Inst)
+void partition()
 {
     return;
 }
@@ -157,8 +192,7 @@ int main(int argc, char *argv[])
     fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
-    vector<Instance> Inst;
-    Net *Nets;
+
     if (!fin)
     {
         cout << "input error";
@@ -317,8 +351,8 @@ int main(int argc, char *argv[])
         getline(fin, lineStr);
         words = split(lineStr, ' ');
         NumNets = stoi(words[1]);
-
         Nets = new Net[NumNets];
+        cout << sizeof(Nets) << endl;
 
         for (int i = 0; i < NumNets; i++)
         {
@@ -344,15 +378,12 @@ int main(int argc, char *argv[])
             }
         }
     }
-    split_half(Inst);
-    partition(Inst);
+    split_half();
+    partition();
     print_set();
-    // initialize_gain(Inst, Nets);
-    // for (int i = 0; i < Inst.size(); i++)
-    // {
-    //     for (int j = 0; j < Inst[i].libCell.Pin_count; j++)
-    //     {
-    //         cout << " " << Inst[i].nets[i];
-    //     }
-    // }
+    initialize_gain();
+    for (int i = 0; i < NumInstances; i++)
+    {
+        cout << Inst[i].gain << " ";
+    }
 }
