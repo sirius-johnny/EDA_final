@@ -25,6 +25,7 @@ int NumNets;
 // partition
 vector<int> IA, IB;
 int max_size = 0;
+int max_pin = 0;
 // 其他全域
 
 typedef struct
@@ -48,9 +49,7 @@ struct LibCell
     int Pin_count;
     Pin *pin;
 };
-
 LibCell *TA, *TB;
-
 class Instance
 {
 public:
@@ -61,6 +60,7 @@ public:
     int *nets;
     int index;
     int gain, size;
+    Instance *next;
     Instance(string instName, string libCellName)
     {
         this->instName = instName;
@@ -79,6 +79,7 @@ public:
         }
         gain = 0;
         size = libCell.size_X * libCell.size_Y;
+        next = nullptr;
     }
     void input_nets(int pin, int net)
     {
@@ -95,8 +96,14 @@ public:
 
 private:
 };
+typedef struct
+{
+    int gain;
+    Instance *c;
+} Bucket;
 vector<Instance> Inst;
 Net *Nets;
+vector<Bucket> bucketA, bucketB;
 const std::vector<std::string> split(const std::string &str, const char &delimiter)
 {
     std::vector<std::string> result;
@@ -180,6 +187,66 @@ void initialize_gain()
             }
         }
     }
+
+    bucketA.clear();
+    for (int i = 0; i < 2 * max_pin + 1; i++)
+    {
+        Bucket b;
+        b.gain = max_pin - i;
+        b.c = nullptr;
+        bucketA.push_back(b);
+    }
+
+    bucketB.clear();
+    for (int i = 0; i < 2 * max_pin + 1; i++)
+    {
+        Bucket b;
+        b.gain = max_pin - i;
+        b.c = nullptr;
+        bucketB.push_back(b);
+    }
+
+    for (int i = 0; i < NumInstances; i++)
+    {
+        if (Inst[i].top)
+        {
+
+            if (bucketA[max_pin - Inst[i].gain].c == nullptr)
+                bucketA[max_pin - Inst[i].gain].c = &Inst[i];
+            else
+            {
+
+                Instance *current = bucketA[max_pin - Inst[i].gain].c;
+
+                while (current->next)
+                {
+                    current = current->next;
+                }
+                current->next = &Inst[i];
+                // cout << current->instName;
+                // cout << current->next->instName;
+            }
+        }
+        else
+        {
+            if (bucketB[max_pin - Inst[i].gain].c == nullptr)
+                bucketB[max_pin - Inst[i].gain].c = &Inst[i];
+            else
+            {
+
+                Instance *current = bucketB[max_pin - Inst[i].gain].c;
+
+                while (current->next)
+                {
+
+                    current = current->next;
+                }
+
+                current->next = &Inst[i];
+            }
+        }
+    }
+
     return;
 }
 void partition()
@@ -235,6 +302,10 @@ int main(int argc, char *argv[])
             }
             if (TA[i].size_X * TA[i].size_Y > max_size)
                 max_size = TA[i].size_X * TA[i].size_Y;
+            if (TA[i].Pin_count > max_pin)
+            {
+                max_pin = TA[i].Pin_count;
+            }
         }
 
         if (NumTechnologies == "2")
@@ -352,7 +423,6 @@ int main(int argc, char *argv[])
         words = split(lineStr, ' ');
         NumNets = stoi(words[1]);
         Nets = new Net[NumNets];
-        cout << sizeof(Nets) << endl;
 
         for (int i = 0; i < NumNets; i++)
         {
@@ -380,10 +450,14 @@ int main(int argc, char *argv[])
     }
     split_half();
     partition();
-    print_set();
+    // print_set();
     initialize_gain();
     for (int i = 0; i < NumInstances; i++)
     {
         cout << Inst[i].gain << " ";
+    }
+    for (int i = 0; i < 7; i++)
+    {
+        cout << bucketA[i].c << endl;
     }
 }
