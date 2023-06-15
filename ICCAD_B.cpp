@@ -206,43 +206,41 @@ void initialize_gain()
         bucketB.push_back(b);
     }
 
+    vector<Instance *> pointerA, pointerB;
+    for (int i = 0; i < 2 * max_pin + 1; i++)
+    {
+        pointerA.push_back(nullptr);
+        pointerB.push_back(nullptr);
+    }
     for (int i = 0; i < NumInstances; i++)
     {
+        // cout << i << " ";
         if (Inst[i].top)
         {
-
             if (bucketA[max_pin - Inst[i].gain].c == nullptr)
+            {
                 bucketA[max_pin - Inst[i].gain].c = &Inst[i];
+                pointerA[max_pin - Inst[i].gain] = &Inst[i];
+            }
             else
             {
 
-                Instance *current = bucketA[max_pin - Inst[i].gain].c;
-
-                while (current->next)
-                {
-                    current = current->next;
-                }
-                current->next = &Inst[i];
-                // cout << current->instName;
-                // cout << current->next->instName;
+                pointerA[max_pin - Inst[i].gain]->next = &Inst[i];
+                pointerA[max_pin - Inst[i].gain] = &Inst[i];
             }
         }
         else
         {
             if (bucketB[max_pin - Inst[i].gain].c == nullptr)
+            {
                 bucketB[max_pin - Inst[i].gain].c = &Inst[i];
+                pointerB[max_pin - Inst[i].gain] = &Inst[i];
+            }
             else
             {
 
-                Instance *current = bucketB[max_pin - Inst[i].gain].c;
-
-                while (current->next)
-                {
-
-                    current = current->next;
-                }
-
-                current->next = &Inst[i];
+                pointerB[max_pin - Inst[i].gain]->next = &Inst[i];
+                pointerB[max_pin - Inst[i].gain] = &Inst[i];
             }
         }
     }
@@ -256,7 +254,7 @@ void partition()
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case1.txt", ios::in);
+    fin.open("ProblemB_case3.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
 
@@ -452,12 +450,13 @@ int main(int argc, char *argv[])
     partition();
     // print_set();
     initialize_gain();
-    for (int i = 0; i < NumInstances; i++)
+    /*for (int i = 0; i < NumInstances; i++)
     {
         cout << Inst[i].gain << " ";
     }
-    for (int i = 0; i < 7; i++)
+    cout << 2 * max_pin + 1 << endl;
+    for (int i = 0; i < 2 * max_pin + 1; i++)
     {
-        cout << bucketA[i].c << endl;
-    }
+        cout << bucketB[i].c << endl;
+    }*/
 }
