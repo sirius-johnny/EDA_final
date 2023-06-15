@@ -99,7 +99,7 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
     }
     return result;
 }
-void split_half(vector<int> IA, vector<int> IB, vector<Instance> Inst)
+void split_half(vector<Instance> Inst)
 {
     for (int i = 0; i < Inst.size(); i++)
     {
@@ -109,11 +109,14 @@ void split_half(vector<int> IA, vector<int> IB, vector<Instance> Inst)
             IA.push_back(i);
         }
         else
+        {
+
             IB.push_back(i);
+        }
     }
     return;
 }
-void partition(vector<int> IA, vector<int> IB, vector<Instance> Inst)
+void partition(vector<Instance> Inst)
 {
     return;
 }
@@ -308,6 +311,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-    split_half(IA, IB, Inst);
-    partition(IA, IB, Inst);
+    split_half(Inst);
+    partition(Inst);
 }
