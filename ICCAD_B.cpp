@@ -129,7 +129,7 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
     }
     return result;
 }
-void partition_init() // Top_area : Bottom_area = TopDieMaxUtil : BottomDieMaxUtil
+void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDieMaxUtil
 {
 
     for (int i = 0; i < Inst.size(); i++){
