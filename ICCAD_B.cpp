@@ -20,10 +20,12 @@ int TopDieRows_X, TopDieRows_Y, TopDieRows_row_len, TopDieRows_row_height, TopDi
 int BottomDieRows_X, BottomDieRows_Y, BottomDieRows_row_len, BottomDieRows_row_height, BottomDieRows_repeat_count;
 string TopDieTech, BottomDieTech;
 int TerminalSize_X, TerminalSize_Y, TerminalSpacing, TerminalCost;
-int NumInstances;
-int NumNets;
+int NumInstances, NumNets;
+int NumMacro = 0;
+
 // partition
-vector<int> IA, IB;
+vector<int>
+    IA, IB;
 int max_size = 0;
 int max_pin = 0;
 // 其他全域
@@ -93,6 +95,7 @@ public:
     void change_top(bool top)
     {
         this->top = top;
+        this->temp_top = top;
         if (top)
             libCell = TA[index];
         else
@@ -253,6 +256,13 @@ void initialize_gain()
 
     return;
 }
+void update_gain(int index)
+{
+    for (int i = 0; i < Inst[index].libCell.Pin_count; i++)
+    {
+        }
+    return;
+}
 void partition()
 {
     return;
@@ -260,7 +270,7 @@ void partition()
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case3.txt", ios::in);
+    fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     cout << "1" << endl;
@@ -419,6 +429,10 @@ int main(int argc, char *argv[])
             words = split(lineStr, ' ');
             Instance inst(words[1], words[2]);
             Inst.push_back(inst);
+            if (inst.libCell.is_Macro)
+            {
+                NumMacro++;
+            }
         }
 
         getline(fin, lineStr); // 47
@@ -452,9 +466,10 @@ int main(int argc, char *argv[])
         }
     }
     split_half();
+
+    initialize_gain();
     partition();
     // print_set();
-    initialize_gain();
     /*for (int i = 0; i < NumInstances; i++)
     {
         cout << Inst[i].gain << " ";
