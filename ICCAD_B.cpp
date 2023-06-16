@@ -124,6 +124,12 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
     }
     return result;
 }
+void partition_init(vector<Instance> &Inst, int Top_util, int Bot_util) // Top_area : Bottom_area = Top_util : Bot_util
+{
+    int area_diff; // top-bottom
+    
+    
+}
 void split_half()
 {
     for (int i = 0; i < NumInstances; i++)
@@ -267,6 +273,7 @@ void partition()
 {
     return;
 }
+
 int main(int argc, char *argv[])
 {
     fstream fin;
