@@ -256,12 +256,58 @@ void initialize_gain()
 
     return;
 }
+void bucket_move(int index, int temp_gain, int temp_temp_gain)
+{
+}
 void update_gain(int index)
 {
     for (int i = 0; i < Inst[index].libCell.Pin_count; i++)
     {
+        int NA = 0;
+        int NB = 0;
+
+        for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+        {
+            if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                NA++;
+            else
+                NB++;
         }
-    return;
+        if (Inst[index].top)
+        {
+            if ((NA == 1) && (NB == 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 2;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NA == 1) && (NB > 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            else
+            {
+            }
+        }
+        else
+        {
+        }
+        return;
+    }
 }
 void partition()
 {
