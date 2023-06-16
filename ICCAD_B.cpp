@@ -200,6 +200,13 @@ void print_set()
     cout << endl;
     return;
 }
+void print_gain()
+{
+    for (int i = 0; i < NumInstances; i++)
+    {
+        cout << Inst[i].temp_gain << " ";
+    }
+}
 void initialize_gain()
 {
     cout << "enter" << endl;
@@ -238,7 +245,10 @@ void initialize_gain()
             }
         }
     }
-
+    for (int i = 0; i < NumInstances; i++)
+    {
+        Inst[i].temp_gain = Inst[i].gain;
+    }
     bucketA.clear();
     for (int i = 0; i < 2 * max_pin + 1; i++)
     {
@@ -265,7 +275,7 @@ void initialize_gain()
     }
     for (int i = 0; i < NumInstances; i++)
     {
-        cout << i << " ";
+        // cout << i << " ";
         if (Inst[i].top)
         {
             if (bucketA[max_pin - Inst[i].gain].c == nullptr)
@@ -741,7 +751,8 @@ int main(int argc, char *argv[])
 
     initialize_gain();
     partition();
-    // print_set();
+    print_set();
+    print_gain();
     /*for (int i = 0; i < NumInstances; i++)
     {
         cout << Inst[i].gain << " ";
@@ -752,7 +763,7 @@ int main(int argc, char *argv[])
         cout << bucketB[i].c << endl;
     }*/
 
-    Net_degree_counter();
+    // Net_degree_counter();
 
     // for(int i=0; i<NumNets; i++){
     //     cout<<"Net"<<i+1<<": "<<"top="<<Nets[i].Top_degree<<", bot="<<Nets[i].Bot_degree<<endl;
