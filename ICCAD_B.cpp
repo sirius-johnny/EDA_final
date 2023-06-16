@@ -23,7 +23,6 @@ int TerminalSize_X, TerminalSize_Y, TerminalSpacing, TerminalCost;
 int NumInstances, NumNets;
 int NumMacro = 0;
 
-
 // partition
 vector<int>
     IA, IB;
@@ -31,7 +30,7 @@ int max_size = 0;
 int max_pin = 0;
 // 其他全域
 
-//Instance 面積總和
+// Instance 面積總和
 long bot_occupied = 0;
 long top_occupied = 0;
 
@@ -132,24 +131,29 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
 void partition_init(vector<Instance> &Inst, int Top_util, int Bot_util) // Top_area : Bottom_area = Top_util : Bot_util
 {
 
-    for (int i = 0; i < Inst.size(); i++){
-        bot_occupied = bot_occupied + Inst[i].sizeB*Bot_util;
+    for (int i = 0; i < Inst.size(); i++)
+    {
+        bot_occupied = bot_occupied + Inst[i].sizeB * Bot_util;
     }
     int macroSplit = NumMacro / 2;
     int index = 0;
-    while(macroSplit > 0){
-        if (Inst[Inst.size()-1-index].libCell.is_Macro){
-            Inst[Inst.size()-1-index].top = 1;
-            Inst[Inst.size()-1-index].temp_top = 1;
-            bot_occupied -= Inst[Inst.size()-1-index].sizeB * Bot_util;
-            top_occupied += Inst[Inst.size()-1-index].sizeA * Top_util;
-            macroSplit --;
+    while (macroSplit > 0)
+    {
+        if (Inst[Inst.size() - 1 - index].libCell.is_Macro)
+        {
+            Inst[Inst.size() - 1 - index].top = 1;
+            Inst[Inst.size() - 1 - index].temp_top = 1;
+            bot_occupied -= Inst[Inst.size() - 1 - index].sizeB * Bot_util;
+            top_occupied += Inst[Inst.size() - 1 - index].sizeA * Top_util;
+            macroSplit--;
         }
         index++;
     }
     index = 0;
-    while((bot_occupied - top_occupied) > 0){
-        if(!Inst[index].libCell.is_Macro){
+    while ((bot_occupied - top_occupied) > 0)
+    {
+        if (!Inst[index].libCell.is_Macro)
+        {
             Inst[index].top = 1;
             Inst[index].temp_top = 1;
             bot_occupied -= Inst[index].sizeB * Bot_util;
@@ -159,7 +163,6 @@ void partition_init(vector<Instance> &Inst, int Top_util, int Bot_util) // Top_a
     }
     bot_occupied /= Bot_util;
     top_occupied /= Top_util;
-    
 }
 void split_half()
 {
@@ -316,6 +319,8 @@ void update_gain(int index)
             {
                 for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
                 {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
                     if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
@@ -328,6 +333,8 @@ void update_gain(int index)
             {
                 for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
                 {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
                     if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
@@ -336,12 +343,161 @@ void update_gain(int index)
                     }
                 }
             }
-            else
+            if ((NA == 2) && (NB == 1))
             {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NA == 2) && (NB > 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NA == 2) && (NB == 0))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 2;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NA > 2) && (NB == 0))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
             }
         }
         else
         {
+            if ((NA == 1) && (NB == 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 2;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NB == 1) && (NA > 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NB == 2) && (NA == 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NB == 2) && (NA > 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NB == 2) && (NA == 0))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 2;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
+            if ((NB > 2) && (NA == 0))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
+                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                    }
+                }
+            }
         }
         return;
     }
