@@ -59,8 +59,9 @@ public:
     bool top;
     int *nets;
     int index;
-    int gain, size;
+    int gain, temp_gain, sizeA, sizeB;
     Instance *next;
+    bool fixed, temp_top;
     Instance(string instName, string libCellName)
     {
         this->instName = instName;
@@ -78,8 +79,12 @@ public:
             nets[i] = -1;
         }
         gain = 0;
-        size = libCell.size_X * libCell.size_Y;
+        temp_gain = 0;
+        sizeA = TA[index].size_X * TA[index].size_Y;
+        sizeB = TB[index].size_X * TB[index].size_Y;
         next = nullptr;
+        fixed = 0;
+        temp_top = 0;
     }
     void input_nets(int pin, int net)
     {
@@ -152,6 +157,7 @@ void print_set()
 }
 void initialize_gain()
 {
+    cout << "enter" << endl;
     for (int i = 0; i < NumNets; i++)
     {
         int NA = 0;
@@ -214,7 +220,7 @@ void initialize_gain()
     }
     for (int i = 0; i < NumInstances; i++)
     {
-        // cout << i << " ";
+        cout << i << " ";
         if (Inst[i].top)
         {
             if (bucketA[max_pin - Inst[i].gain].c == nullptr)
@@ -257,7 +263,7 @@ int main(int argc, char *argv[])
     fin.open("ProblemB_case3.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
-
+    cout << "1" << endl;
     if (!fin)
     {
         cout << "input error";
@@ -421,7 +427,6 @@ int main(int argc, char *argv[])
         words = split(lineStr, ' ');
         NumNets = stoi(words[1]);
         Nets = new Net[NumNets];
-
         for (int i = 0; i < NumNets; i++)
         {
             getline(fin, lineStr);
