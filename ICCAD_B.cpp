@@ -38,6 +38,8 @@ long top_occupied = 0;
 typedef struct
 {
     int Pin_num;
+    int Top_degree;
+    int Bot_degree;
     int **Ins_Pin;
 } Net;
 
@@ -51,8 +53,8 @@ struct LibCell
 {
     bool is_Macro;
     string Name;
-    int size_X;
-    int size_Y;
+    double size_X;
+    double size_Y;
     int Pin_count;
     Pin *pin;
 };
@@ -351,6 +353,28 @@ void partition()
     return;
 }
 
+int Top_NumPins, Bot_NumPins;
+void Net_degree_counter(){
+    for(int i=0; i<NumNets; i++){
+        for(int j=0; j<Nets[i].Pin_num; j++){
+            if(Inst[Nets[i].Ins_Pin[j][0]].top){
+                Nets[i].Top_degree += 1;
+            }
+            else{
+                Nets[i].Bot_degree +=1;
+            }
+        }
+    }
+    Top_NumPins = 0;
+    Bot_NumPins = 0;
+    for(int i=0; i<NumNets; i++){
+        Top_NumPins += Nets[i].Top_degree;
+        Bot_NumPins += Nets[i].Bot_degree;
+    }
+    cout<<"Top_NumPins="<<Top_NumPins<<endl;
+    cout<<"Bot_NumPins="<<Bot_NumPins<<endl;
+}
+
 int main(int argc, char *argv[])
 {
     fstream fin;
@@ -530,6 +554,8 @@ int main(int argc, char *argv[])
             getline(fin, lineStr);
             words = split(lineStr, ' ');
             Nets[i].Pin_num = stoi(words[2]);
+            Nets[i].Top_degree = 0;
+            Nets[i].Bot_degree = 0;
             // 初始化Ins_Pin
             Nets[i].Ins_Pin = new int *[Nets[i].Pin_num];
             for (int j = 0; j < Nets[i].Pin_num; j++)
@@ -563,4 +589,88 @@ int main(int argc, char *argv[])
     {
         cout << bucketB[i].c << endl;
     }*/
+
+    Net_degree_counter();
+    
+    // for(int i=0; i<NumNets; i++){
+    //     cout<<"Net"<<i+1<<": "<<"top="<<Nets[i].Top_degree<<", bot="<<Nets[i].Bot_degree<<endl;
+    // }
+
+    // -------------- NTUplace -------------- //
+    // .aux
+    fstream faux;
+    faux.open("topdie.aux", ios::out);
+    faux<<"RowBasedPlacement : topdie.nodes topdie.nets topdie.wts topdie.pl topdie.scl";
+    faux.close();
+    //.nodes
+    fstream fnodes;
+    fnodes.open("topdie.nodes", ios::out);
+    fnodes<<"UCLA nodes 1.0"<<endl<<endl;
+    fnodes<<"NumNodes : "<<IA.size()<<endl;
+    fnodes<<"NumTerminals : "<<0<<endl;
+        //Terminal還沒存進去喔
+    for(int i=0; i<IA.size(); i++){
+        fnodes<<"\t"<<Inst[IA[i]].instName<<"\t"<<Inst[IA[i]].libCell.size_X<<"\t"<<Inst[IA[i]].libCell.size_Y<<endl;
+    }
+    //.nets
+    // int Top_net_degree[NumNets] = {0};
+    // int Top_num_pin = 0;
+    // for(int i=0; i<NumNets; i++){
+        
+    // }
+
+    fstream fnets;
+    fnets.open("topdie.nets", ios::out);
+    fnets<<"UCLA nets 1.0"<<endl<<endl;
+    fnets<<"NumNets : "<<NumNets<<endl;
+    fnets<<"NumPins : "<<Top_NumPins<<endl;
+    double pin_x_offset = 0;
+    double pin_y_offset = 0;
+    for(int i=0; i<NumNets; i++){
+        fnets<<"NetDegree : "<<Nets[i].Top_degree<<"\t"<<"N"<<i+1<<endl;
+        for(int j=0; j<Nets[i].Pin_num; j++){
+            if(Inst[Nets[i].Ins_Pin[j][0]].top){
+                pin_x_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationX - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_X/2;
+                pin_y_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationY - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_Y/2;
+                fnets<<"\t"<<Inst[Nets[i].Ins_Pin[j][0]].instName<<" I : "<<pin_x_offset<<" "<<pin_y_offset<<endl;
+            }
+        }
+    }
+    //.wts
+    fstream fwts;
+    fwts.open("topdie.wts", ios::out);
+    fwts<<"UCLA wts 1.0"<<endl<<endl;
+    for(int i=0; i<IA.size(); i++){
+        fwts<<"\t"<<Inst[IA[i]].instName<<"\t"<<0<<endl;
+    }
+    //.pl
+    fstream fpl;
+    fpl.open("topdie.pl", ios::out);
+    fpl<<"UCLA pl 1.0"<<endl<<endl;
+    for(int i=0; i<IA.size(); i++){
+        if(!Inst[IA[i]].libCell.is_Macro){
+            fpl<<Inst[IA[i]].instName<<"\t"<<0<<"\t"<<0<<" : "<<"N"<<endl;
+        }
+        else{
+            fpl<<Inst[IA[i]].instName<<"\t"<<0<<"\t"<<0<<" : "<<"FS"<<endl;
+        }
+    }
+
+    //.scl
+    fstream fscl;
+    fscl.open("topdie.scl", ios::out);
+    fscl<<"UCLA scl 1.0"<<endl<<endl;
+    fscl<<"Numrows : "<<TopDieRows_repeat_count<<endl<<endl;
+    for(int i=0; i<TopDieRows_repeat_count; i++){
+        fscl<<"CoreRow Horizontal"<<endl;
+        fscl<<"\t"<<"Coordinate :\t"<<i*TopDieRows_row_height<<endl;
+        fscl<<"\t"<<"Height :\t"<<TopDieRows_row_height<<endl;
+        fscl<<"\t"<<"Sitewidth :\t"<<1<<endl;
+        fscl<<"\t"<<"Sitespacing :\t"<<1<<endl;
+        fscl<<"\t"<<"Siteorient :\t"<<1<<endl;
+        fscl<<"\t"<<"Sitesymmetry :\t"<<"Y"<<endl;
+        fscl<<"\t"<<"SubrowOrigin :\t"<<0<<" Numsites :\t"<<DieSize_UR_Y<<endl;
+        fscl<<"End"<<endl;
+    }
+    
 }
