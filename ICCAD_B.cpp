@@ -133,7 +133,7 @@ void partition_init() // Top_area : Bottom_area = TopDieMaxUtil : BottomDieMaxUt
 {
 
     for (int i = 0; i < Inst.size(); i++){
-        bot_occupied = bot_occupied + Inst[i].sizeB*BottomDieMaxUtil;
+        bot_occupied = bot_occupied + Inst[i].sizeB*TopDieMaxUtil;
     }
     int macroSplit = NumMacro / 2;
     int index = 0;
@@ -141,8 +141,8 @@ void partition_init() // Top_area : Bottom_area = TopDieMaxUtil : BottomDieMaxUt
         if (Inst[Inst.size()-1-index].libCell.is_Macro){
             Inst[Inst.size()-1-index].top = 1;
             Inst[Inst.size()-1-index].temp_top = 1;
-            bot_occupied -= Inst[Inst.size()-1-index].sizeB * BottomDieMaxUtil;
-            top_occupied += Inst[Inst.size()-1-index].sizeA * TopDieMaxUtil;
+            bot_occupied -= Inst[Inst.size()-1-index].sizeB * TopDieMaxUtil;
+            top_occupied += Inst[Inst.size()-1-index].sizeA * BottomDieMaxUtil;
             macroSplit --;
         }
         index++;
@@ -152,13 +152,13 @@ void partition_init() // Top_area : Bottom_area = TopDieMaxUtil : BottomDieMaxUt
         if(!Inst[index].libCell.is_Macro){
             Inst[index].top = 1;
             Inst[index].temp_top = 1;
-            bot_occupied -= Inst[index].sizeB * BottomDieMaxUtil;
-            top_occupied += Inst[index].sizeA * TopDieMaxUtil;
+            bot_occupied -= Inst[index].sizeB * TopDieMaxUtil;
+            top_occupied += Inst[index].sizeA * BottomDieMaxUtil;
         }
         index++;
     }
-    bot_occupied /= BottomDieMaxUtil;
-    top_occupied /= TopDieMaxUtil;
+    bot_occupied /= TopDieMaxUtil;
+    top_occupied /= BottomDieMaxUtil;
     
 }
 void split_half()
