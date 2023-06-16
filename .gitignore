@@ -1,3 +1,9 @@
 *.exe
 o.txt
+*.aux
+*.nets
+*.nodes
+*.pl
+*.scl
+*.wts
 .vscode/
