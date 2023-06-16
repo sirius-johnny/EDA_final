@@ -129,11 +129,11 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
     }
     return result;
 }
-void partition_init(vector<Instance> &Inst, int Top_util, int Bot_util) // Top_area : Bottom_area = Top_util : Bot_util
+void partition_init() // Top_area : Bottom_area = TopDieMaxUtil : BottomDieMaxUtil
 {
 
     for (int i = 0; i < Inst.size(); i++){
-        bot_occupied = bot_occupied + Inst[i].sizeB*Bot_util;
+        bot_occupied = bot_occupied + Inst[i].sizeB*BottomDieMaxUtil;
     }
     int macroSplit = NumMacro / 2;
     int index = 0;
@@ -141,8 +141,8 @@ void partition_init(vector<Instance> &Inst, int Top_util, int Bot_util) // Top_a
         if (Inst[Inst.size()-1-index].libCell.is_Macro){
             Inst[Inst.size()-1-index].top = 1;
             Inst[Inst.size()-1-index].temp_top = 1;
-            bot_occupied -= Inst[Inst.size()-1-index].sizeB * Bot_util;
-            top_occupied += Inst[Inst.size()-1-index].sizeA * Top_util;
+            bot_occupied -= Inst[Inst.size()-1-index].sizeB * BottomDieMaxUtil;
+            top_occupied += Inst[Inst.size()-1-index].sizeA * TopDieMaxUtil;
             macroSplit --;
         }
         index++;
@@ -152,13 +152,13 @@ void partition_init(vector<Instance> &Inst, int Top_util, int Bot_util) // Top_a
         if(!Inst[index].libCell.is_Macro){
             Inst[index].top = 1;
             Inst[index].temp_top = 1;
-            bot_occupied -= Inst[index].sizeB * Bot_util;
-            top_occupied += Inst[index].sizeA * Top_util;
+            bot_occupied -= Inst[index].sizeB * BottomDieMaxUtil;
+            top_occupied += Inst[index].sizeA * TopDieMaxUtil;
         }
         index++;
     }
-    bot_occupied /= Bot_util;
-    top_occupied /= Top_util;
+    bot_occupied /= BottomDieMaxUtil;
+    top_occupied /= TopDieMaxUtil;
     
 }
 void split_half()
