@@ -317,7 +317,14 @@ void update_gain(int index)
     {
         int NA = 0;
         int NB = 0;
+        // cout << Inst[index].top << "a";
+        if (Inst[index].nets[i] < 0)
+        {
+            // cout << i << endl;
+            continue;
+        }
 
+        // cout << Inst[index].nets[i] << endl;
         for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
         {
             if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
@@ -325,6 +332,7 @@ void update_gain(int index)
             else
                 NB++;
         }
+
         if (Inst[index].top)
         {
             if ((NA == 1) && (NB == 1))
@@ -420,6 +428,7 @@ void update_gain(int index)
         }
         else
         {
+
             if ((NA == 1) && (NB == 1))
             {
                 for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
@@ -454,6 +463,7 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
+
                     if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
@@ -511,8 +521,8 @@ void update_gain(int index)
                 }
             }
         }
-        return;
     }
+    return;
 }
 void partition()
 {
@@ -752,6 +762,7 @@ int main(int argc, char *argv[])
     initialize_gain();
     partition();
     print_set();
+    update_gain(7);
     print_gain();
     /*for (int i = 0; i < NumInstances; i++)
     {
