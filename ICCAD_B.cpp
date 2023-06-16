@@ -23,12 +23,17 @@ int TerminalSize_X, TerminalSize_Y, TerminalSpacing, TerminalCost;
 int NumInstances, NumNets;
 int NumMacro = 0;
 
+
 // partition
 vector<int>
     IA, IB;
 int max_size = 0;
 int max_pin = 0;
 // 其他全域
+
+//Instance 面積總和
+long bot_occupied = 0;
+long top_occupied = 0;
 
 typedef struct
 {
@@ -123,6 +128,38 @@ const std::vector<std::string> split(const std::string &str, const char &delimit
         result.push_back(tok);
     }
     return result;
+}
+void partition_init(vector<Instance> &Inst, int Top_util, int Bot_util) // Top_area : Bottom_area = Top_util : Bot_util
+{
+
+    for (int i = 0; i < Inst.size(); i++){
+        bot_occupied = bot_occupied + Inst[i].sizeB*Bot_util;
+    }
+    int macroSplit = NumMacro / 2;
+    int index = 0;
+    while(macroSplit > 0){
+        if (Inst[Inst.size()-1-index].libCell.is_Macro){
+            Inst[Inst.size()-1-index].top = 1;
+            Inst[Inst.size()-1-index].temp_top = 1;
+            bot_occupied -= Inst[Inst.size()-1-index].sizeB * Bot_util;
+            top_occupied += Inst[Inst.size()-1-index].sizeA * Top_util;
+            macroSplit --;
+        }
+        index++;
+    }
+    index = 0;
+    while((bot_occupied - top_occupied) > 0){
+        if(!Inst[index].libCell.is_Macro){
+            Inst[index].top = 1;
+            Inst[index].temp_top = 1;
+            bot_occupied -= Inst[index].sizeB * Bot_util;
+            top_occupied += Inst[index].sizeA * Top_util;
+        }
+        index++;
+    }
+    bot_occupied /= Bot_util;
+    top_occupied /= Top_util;
+    
 }
 void split_half()
 {
@@ -313,6 +350,7 @@ void partition()
 {
     return;
 }
+
 int main(int argc, char *argv[])
 {
     fstream fin;
