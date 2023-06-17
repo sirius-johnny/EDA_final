@@ -68,7 +68,7 @@ public:
     int *nets;
     int index;
     int gain, temp_gain, sizeA, sizeB;
-    Instance *next;
+    Instance *next, *previous;
     bool fixed, temp_top;
     Instance(string instName, string libCellName)
     {
@@ -91,6 +91,7 @@ public:
         sizeA = TA[index].size_X * TA[index].size_Y;
         sizeB = TB[index].size_X * TB[index].size_Y;
         next = nullptr;
+        previous = nullptr;
         fixed = 0;
         temp_top = 0;
     }
@@ -287,6 +288,7 @@ void initialize_gain()
             {
 
                 pointerA[max_pin - Inst[i].gain]->next = &Inst[i];
+                Inst[i].previous = pointerA[max_pin - Inst[i].gain];
                 pointerA[max_pin - Inst[i].gain] = &Inst[i];
             }
         }
@@ -301,6 +303,7 @@ void initialize_gain()
             {
 
                 pointerB[max_pin - Inst[i].gain]->next = &Inst[i];
+                Inst[i].previous = pointerB[max_pin - Inst[i].gain];
                 pointerB[max_pin - Inst[i].gain] = &Inst[i];
             }
         }
@@ -528,7 +531,26 @@ void partition()
 {
     return;
 }
-
+int num_terminal()
+{
+    int num = 0;
+    for (int i = 0; i < NumNets; i++)
+    {
+        int NA = 0;
+        int NB = 0;
+        for (int j = 0; j < Nets[i].Pin_num; j++)
+        {
+            if (Inst[Nets[i].Ins_Pin[j][0]].top)
+                NA++;
+            else
+                NB++;
+        }
+        if ((NA != 0) && (NB != 0))
+            num++;
+    }
+    cout << "num_terminal = " << num << endl;
+    return num;
+}
 int Top_NumPins, Bot_NumPins;
 void Net_degree_counter()
 {
@@ -762,8 +784,10 @@ int main(int argc, char *argv[])
     initialize_gain();
     partition();
     print_set();
-    update_gain(7);
+    // update_gain(7);
+    // cout << Inst[6].previous->instName << endl;
     print_gain();
+    num_terminal();
     /*for (int i = 0; i < NumInstances; i++)
     {
         cout << Inst[i].gain << " ";
