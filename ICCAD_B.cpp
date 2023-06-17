@@ -207,6 +207,7 @@ void print_gain()
     {
         cout << Inst[i].temp_gain << " ";
     }
+    cout << endl;
 }
 void initialize_gain()
 {
@@ -314,8 +315,47 @@ void initialize_gain()
 void bucket_move(int index, int temp_gain, int temp_temp_gain)
 {
 }
+void del_cell(int index)
+{
+
+    if (!Inst[index].previous)
+    {
+        if (Inst[index].temp_top)
+        {
+            if (!Inst[index].next)
+                bucketA[max_pin - Inst[index].temp_gain].c = nullptr;
+            else
+            {
+                bucketA[max_pin - Inst[index].temp_gain].c = Inst[index].next;
+                Inst[index].next->previous = nullptr;
+            }
+        }
+        else
+        {
+            if (!Inst[index].next)
+                bucketB[max_pin - Inst[index].temp_gain].c = nullptr;
+            else
+            {
+                bucketB[max_pin - Inst[index].temp_gain].c = Inst[index].next;
+                Inst[index].next->previous = nullptr;
+            }
+        }
+    }
+
+    else
+    {
+        if (!Inst[index].next)
+            Inst[index].previous->next = nullptr;
+        else
+        {
+            Inst[index].previous->next = Inst[index].next;
+            Inst[index].next->previous = Inst[index].previous;
+        }
+    }
+}
 void update_gain(int index)
 {
+    del_cell(index);
     for (int i = 0; i < Inst[index].libCell.Pin_count; i++)
     {
         int NA = 0;
@@ -783,11 +823,12 @@ int main(int argc, char *argv[])
 
     initialize_gain();
     partition();
-    print_set();
-    // update_gain(7);
-    // cout << Inst[6].previous->instName << endl;
+    // print_set();
+    //  update_gain(7);
+    //  cout << Inst[6].previous->instName << endl;
     print_gain();
-    num_terminal();
+
+    //  num_terminal();
     /*for (int i = 0; i < NumInstances; i++)
     {
         cout << Inst[i].gain << " ";
