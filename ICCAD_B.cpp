@@ -25,7 +25,7 @@ int NumMacro = 0;
 
 // partition
 vector<int>
-    IA, IB;
+    IA, IB; // vector of index of instructions (0 => C1), not sorted. IA for top / IB for bot.
 int max_size = 0;
 int max_pin = 0;
 // 其他全域
@@ -40,6 +40,7 @@ typedef struct
     int Top_degree;
     int Bot_degree;
     int **Ins_Pin;
+    int edges[4]; // left,right,top,bottom
 } Net;
 
 typedef struct
@@ -99,14 +100,21 @@ public:
     {
         nets[pin] = net;
     }
-    void change_top(bool top)
+    void change_top(bool top) // update top, temptop, IA/IB, libCell of Instance
     {
+        int instindex = stoi(this->instName.erase(0,1))-1;
         this->top = top;
         this->temp_top = top;
-        if (top)
+        if (top){
             libCell = TA[index];
-        else
+            IB.erase(remove(IB.begin(), IB.end(), instindex), IB.end());
+            IA.push_back(instindex);
+        }
+        else{
             libCell = TB[index];
+            IA.erase(remove(IA.begin(), IA.end(), instindex), IA.end());
+            IB.push_back(instindex);
+        }
     }
 
 private:
@@ -116,6 +124,11 @@ typedef struct
     int gain;
     Instance *c;
 } Bucket;
+struct Terminal{
+    string netName;
+    int center_x, center_y;
+};
+vector<Terminal> Terminals;
 vector<Instance> Inst;
 Net *Nets;
 vector<Bucket> bucketA, bucketB;
@@ -137,6 +150,7 @@ void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDie
     for (int i = 0; i < Inst.size(); i++)
     {
         bot_occupied = bot_occupied + Inst[i].sizeB * TopDieMaxUtil;
+        IB.push_back(i);
     }
     int macroSplit = NumMacro / 2;
     int index = 0;
@@ -144,8 +158,7 @@ void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDie
     {
         if (Inst[Inst.size() - 1 - index].libCell.is_Macro)
         {
-            Inst[Inst.size() - 1 - index].top = 1;
-            Inst[Inst.size() - 1 - index].temp_top = 1;
+            Inst[Inst.size() - 1 - index].change_top(1);
             bot_occupied -= Inst[Inst.size() - 1 - index].sizeB * TopDieMaxUtil;
             top_occupied += Inst[Inst.size() - 1 - index].sizeA * BottomDieMaxUtil;
             macroSplit--;
@@ -157,8 +170,7 @@ void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDie
     {
         if (!Inst[index].libCell.is_Macro)
         {
-            Inst[index].top = 1;
-            Inst[index].temp_top = 1;
+            Inst[index].change_top(1);
             bot_occupied -= Inst[index].sizeB * TopDieMaxUtil;
             top_occupied += Inst[index].sizeA * BottomDieMaxUtil;
         }
@@ -637,6 +649,51 @@ void Net_degree_counter()
     }
     cout << "Top_NumPins=" << Top_NumPins << endl;
     cout << "Bot_NumPins=" << Bot_NumPins << endl;
+}
+
+void net_edges_init(){
+    for(int i = 0; i < NumNets; i++){
+        int top_left = DieSize_UR_X, top_right = DieSize_LL_X, top_top = DieSize_LL_Y, top_bot = DieSize_UR_Y;
+        int bot_left = DieSize_UR_X, bot_right = DieSize_LL_X, bot_top = DieSize_LL_Y, bot_bot = DieSize_UR_Y;
+        int pin_x, pin_y;
+        if(Nets[i].Top_degree * Nets[i].Bot_degree > 0){
+            Terminal term{"N"+to_string(i+1),0,0};
+            Terminals.push_back(term);
+            for(int j = 0; j < Nets[i].Pin_num; j++){
+                string inst_name = "C" + to_string(Nets[i].Ins_Pin[j][0]+1); //index of instance 0=>C1
+                string pin_name = "P" + to_string(Nets[i].Ins_Pin[j][1]+1); //index of instance 0=>C1
+                auto it = find_if(Inst.begin(),Inst.end(),[inst_name](Instance obj){return obj.instName == inst_name;});
+                LibCell libcell = it->libCell;
+                auto it2 = find_if(libcell.pin,libcell.pin+libcell.Pin_count,[pin_name](Pin pin){return pin.pinName == pin_name;});
+                if((it==Inst.end() )|| (it2 == libcell.pin + libcell.Pin_count)){
+                    cout << "net_edges_init error" << endl;
+                }
+                pin_x = it->locationX + it2->pinLocationX;
+                pin_y = it->locationY + it2->pinLocationY;
+                if(it->top == 1){
+                    top_left = (top_left > pin_x) ? pin_x : top_left;
+                    top_right = (top_right < pin_x) ? pin_x : top_right;
+                    top_top = (top_top < pin_y) ? pin_y : top_top;
+                    top_bot = (top_bot > pin_y) ? pin_y : top_bot;
+                }
+                else if(it->top == 0){
+                    bot_left = (bot_left > pin_x) ? pin_x : bot_left;
+                    bot_right = (bot_right < pin_x) ? pin_x : bot_right;
+                    bot_top = (bot_top < pin_y) ? pin_y : bot_top;
+                    bot_bot = (bot_bot > pin_y) ? pin_y : bot_bot;
+                }
+
+            }
+        vector<int> v = {top_left,top_right,bot_left,bot_right};
+        sort(v.begin(),v.end());
+        Nets[i].edges[0] = v[1];
+        Nets[i].edges[1] = v[2];
+        v = {top_top, top_bot, bot_top, bot_bot};
+        Nets[i].edges[2] = v[1];
+        Nets[i].edges[3] = v[2];
+        
+    }
+}
 }
 
 int main(int argc, char *argv[])
