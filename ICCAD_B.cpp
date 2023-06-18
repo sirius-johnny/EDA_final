@@ -211,7 +211,6 @@ void print_gain()
 }
 void initialize_gain()
 {
-    cout << "enter" << endl;
     for (int i = 0; i < NumNets; i++)
     {
         int NA = 0;
@@ -312,36 +311,31 @@ void initialize_gain()
 
     return;
 }
-void bucket_move(int index, int temp_gain, int temp_temp_gain)
+void del_cell(int index, int gain)
 {
-}
-void del_cell(int index)
-{
-
     if (!Inst[index].previous)
     {
         if (Inst[index].temp_top)
         {
             if (!Inst[index].next)
-                bucketA[max_pin - Inst[index].temp_gain].c = nullptr;
+                bucketA[max_pin - gain].c = nullptr;
             else
             {
-                bucketA[max_pin - Inst[index].temp_gain].c = Inst[index].next;
+                bucketA[max_pin - gain].c = Inst[index].next;
                 Inst[index].next->previous = nullptr;
             }
         }
         else
         {
             if (!Inst[index].next)
-                bucketB[max_pin - Inst[index].temp_gain].c = nullptr;
+                bucketB[max_pin - gain].c = nullptr;
             else
             {
-                bucketB[max_pin - Inst[index].temp_gain].c = Inst[index].next;
+                bucketB[max_pin - gain].c = Inst[index].next;
                 Inst[index].next->previous = nullptr;
             }
         }
     }
-
     else
     {
         if (!Inst[index].next)
@@ -353,9 +347,35 @@ void del_cell(int index)
         }
     }
 }
+void move_cell(int index, int temp_gain)
+{
+    del_cell(index, temp_gain);
+    if (Inst[index].top)
+    {
+        if (!bucketA[max_pin - Inst[index].temp_gain].c)
+            bucketA[max_pin - Inst[index].temp_gain].c = &Inst[index];
+        else
+        {
+            bucketA[max_pin - Inst[index].temp_gain].c->previous = &Inst[index];
+            Inst[index].next = bucketA[max_pin - Inst[index].temp_gain].c;
+            bucketA[max_pin - Inst[index].temp_gain].c = &Inst[index];
+        }
+    }
+    else
+    {
+        if (!bucketB[max_pin - Inst[index].temp_gain].c)
+            bucketB[max_pin - Inst[index].temp_gain].c = &Inst[index];
+        else
+        {
+            bucketB[max_pin - Inst[index].temp_gain].c->previous = &Inst[index];
+            Inst[index].next = bucketB[max_pin - Inst[index].temp_gain].c;
+            bucketB[max_pin - Inst[index].temp_gain].c = &Inst[index];
+        }
+    }
+}
 void update_gain(int index)
 {
-    del_cell(index);
+    del_cell(index, Inst[index].temp_gain);
     for (int i = 0; i < Inst[index].libCell.Pin_count; i++)
     {
         int NA = 0;
@@ -388,7 +408,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 2;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -402,7 +422,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -416,13 +436,13 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                     if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -436,7 +456,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -450,7 +470,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 2;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -464,7 +484,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -482,7 +502,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 2;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -496,7 +516,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -511,13 +531,13 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                     if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -531,7 +551,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -545,7 +565,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 2;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -559,7 +579,7 @@ void update_gain(int index)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
-                        bucket_move(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain, Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain);
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
                 }
             }
@@ -625,7 +645,6 @@ int main(int argc, char *argv[])
     fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
-    cout << "1" << endl;
     if (!fin)
     {
         cout << "input error";
@@ -823,12 +842,12 @@ int main(int argc, char *argv[])
 
     initialize_gain();
     partition();
-    // print_set();
-    //  update_gain(7);
-    //  cout << Inst[6].previous->instName << endl;
     print_gain();
-
-    //  num_terminal();
+    update_gain(2);
+    print_gain();
+    // cout << bucketA[1].c->next->instName;
+    //  cout << Inst[5].previous->previous->previous->instName;
+    //    num_terminal();
     /*for (int i = 0; i < NumInstances; i++)
     {
         cout << Inst[i].gain << " ";
