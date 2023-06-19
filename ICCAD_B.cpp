@@ -102,6 +102,7 @@ public:
     void change_top(bool top) // update top, temptop, IA/IB, libCell of Instance
     {
         int instindex = stoi(this->instName.erase(0, 1)) - 1;
+        this->instName = "C" + this->instName;
         this->top = top;
         this->temp_top = top;
         if (top)
@@ -755,6 +756,7 @@ void net_edges_init()
 void NTUplace_TOP(string filename);
 void NTUplace_BOT(string filename);
 void NTUplace_Get_TOP_Result(string filename);
+void NTUplace_BOT_PinProjection(string filename);
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
 
 int main(int argc, char *argv[])
@@ -957,7 +959,7 @@ int main(int argc, char *argv[])
         }
     }
     partition_init();
-
+    // split_half();
     initialize_gain();
     print_set();
     Net_degree_counter();
@@ -965,14 +967,14 @@ int main(int argc, char *argv[])
     // cout << bucketA[1].c->next->instName;
     //  cout << Inst[5].previous->previous->previous->instName;
     //    num_terminal();
-    /*for (int i = 0; i < NumInstances; i++)
-    {
-        // cout << bucketA[i].c << endl;
-    }
-    for (int i = 0; i < 7; i++)
-    {
-        cout << bucketB[i].c << endl;
-    }
+    // for (int i = 0; i < NumInstances; i++)
+    // {
+    //     // cout << bucketA[i].c << endl;
+    // }
+    // for (int i = 0; i < 7; i++)
+    // {
+    //     cout << bucketB[i].c << endl;
+    // }
     // cout << bucketB[2].c->instName << bucketB[2].c->next->instName << bucketB[2].c->previous->instName;
 
     print_set();
@@ -984,12 +986,12 @@ int main(int argc, char *argv[])
     string Top_NTUplace_filename, Bot_NTUplace_filename;
     Top_NTUplace_filename = "TOP_PLACE";
     Bot_NTUplace_filename = "BOT_PLACE";
-    // NTUplace_TOP(Top_NTUplace_filename);
+    NTUplace_TOP(Top_NTUplace_filename);
     // NTUplace_BOT(Bot_NTUplace_filename);
     NTUplace_Get_TOP_Result(Top_NTUplace_filename);
     
     for(int i=0; i<IA.size(); i++){
-        cout<<Inst[IA[i]].instName<<", left low (x,y) = ("<<Inst[IA[i]].locationX<<","<<Inst[IA[i]].locationY<<")"<<endl;
+        cout<<Inst[IA[i]].instName<<", left low (x,y) = ("<<Inst[IA[i]].locationX<<","<<Inst[IA[i]].locationY<<")"<<" ,Rotate R"<<Inst[IA[i]].rotate<<endl;
     }
 
 
@@ -1222,5 +1224,112 @@ void NTUplace_Get_TOP_Result(string filename){
     }
     else {
         cout<<"TOP_Result_File doesn't exist..."<<endl;
+    }
+}
+
+void NTUplace_BOT_PinProjection(string filename){
+    // .aux
+    fstream faux;
+    faux.open(filename+".aux", ios::out);
+    faux << "RowBasedPlacement : "<<filename<<".nodes "<<filename<<".nets "<<filename<<".wts "<<filename<<".pl "<<filename<<".scl";
+    faux.close();
+    //.nodes
+    fstream fnodes;
+    fnodes.open(filename+".nodes", ios::out);
+    fnodes<<"UCLA nodes 1.0"<<endl<<endl;
+    fnodes<<"NumNodes : "<<IB.size()<<endl;
+    fnodes<<"NumTerminals : "<<IA.size()<<endl; // 上層的Inst全部投影下來當參考
+        //Terminal還沒存進去喔
+    for(int i=0; i<IA.size(); i++){
+        fnodes<<"\t"<<Inst[IA[i]].instName<<"\t"<<0<<"\t"<<0<<"\tterminal"<<endl;
+    }
+    for(int i=0; i<IB.size(); i++){
+        fnodes<<"\t"<<Inst[IB[i]].instName<<"\t"<<Inst[IB[i]].libCell.size_X<<"\t"<<Inst[IB[i]].libCell.size_Y<<endl;
+    }
+    //.nets
+    // int Top_net_degree[NumNets] = {0};
+    // int Top_num_pin = 0;
+    // for(int i=0; i<NumNets; i++){
+
+    // }
+
+    fstream fnets;
+    fnets.open(filename+".nets", ios::out);
+    fnets << "UCLA nets 1.0" << endl
+          << endl;
+    fnets << "NumNets : " << NumNets << endl;
+    fnets << "NumPins : " << Top_NumPins+Bot_NumPins << endl;
+    double pin_x_offset = 0;
+    double pin_y_offset = 0;
+    for (int i = 0; i < NumNets; i++)
+    {
+        fnets << "NetDegree : " << Nets[i].Top_degree+Nets[i].Bot_degree << "\t"
+              << "N" << i + 1 << endl;
+        for (int j = 0; j < Nets[i].Pin_num; j++)
+        {
+            pin_x_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationX - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_X / 2;
+            pin_y_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationY - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_Y / 2;
+            fnets << "\t" << Inst[Nets[i].Ins_Pin[j][0]].instName << " I : " << pin_x_offset << " " << pin_y_offset << endl;
+        }
+    }
+    //.wts
+    fstream fwts;
+    fwts.open(filename+".wts", ios::out);
+    fwts << "UCLA wts 1.0" << endl
+         << endl;
+    for (int i = 0; i < IA.size(); i++)
+    {
+        fwts << "\t" << Inst[IA[i]].instName << "\t" << 0 << endl;
+    }     
+    for (int i = 0; i < IB.size(); i++)
+    {
+        fwts << "\t" << Inst[IB[i]].instName << "\t" << 0 << endl;
+    }
+    //.pl
+    fstream fpl;
+    fpl.open(filename+".pl", ios::out);
+    fpl << "UCLA pl 1.0" << endl
+        << endl;
+    for(int i=0; i<IA.size(); i++){
+        fpl<<Inst[IA[i]].instName << "\t" << Inst[IA[i]].locationX+Inst[IA[i]].libCell.size_X/2 << "\t" << Inst[IA[i]].locationY+Inst[IA[i]].libCell.size_Y/2 << " : "<< "/FIXED" << endl;
+    }
+    for (int i = 0; i < IB.size(); i++)
+    {
+        if (!Inst[IB[i]].libCell.is_Macro)
+        {
+            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X/2 << "\t" << DieSize_UR_Y/2 << " : "
+                << "N" << endl;
+        }
+        else{
+            fpl<<Inst[IB[i]].instName<<"\t"<<DieSize_UR_X/2<<"\t"<<DieSize_UR_Y/2<<" : "<<"E"<<endl;
+        }
+    }
+
+    //.scl
+    fstream fscl;
+    fscl.open(filename+".scl", ios::out);
+    fscl << "UCLA scl 1.0" << endl
+         << endl;
+    fscl << "Numrows : " << BottomDieRows_repeat_count << endl
+         << endl;
+    for (int i = 0; i < BottomDieRows_repeat_count; i++)
+    {
+        fscl << "CoreRow Horizontal" << endl;
+        fscl << "\t"
+             << "Coordinate :\t" << i * BottomDieRows_row_height << endl;
+        fscl << "\t"
+             << "Height :\t" << BottomDieRows_row_height << endl;
+        fscl << "\t"
+             << "Sitewidth :\t" << 1 << endl;
+        fscl << "\t"
+             << "Sitespacing :\t" << 1 << endl;
+        fscl << "\t"
+             << "Siteorient :\t" << 1 << endl;
+        fscl << "\t"
+             << "Sitesymmetry :\t"
+             << "Y" << endl;
+        fscl << "\t"
+             << "SubrowOrigin :\t" << 0 << " Numsites :\t" << DieSize_UR_X << endl;
+        fscl << "End" << endl;
     }
 }
