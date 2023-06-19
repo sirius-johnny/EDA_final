@@ -188,7 +188,7 @@ void split_half()
     {
         if (i % 2 == 0)
         {
-            Inst[i].change_top(1);
+            Inst[i].top = 1;
         }
     }
     return;
@@ -338,6 +338,7 @@ void initialize_gain()
 }
 void del_cell(int index, int gain)
 {
+    cout << "delete C" << index + 1 << " with gain " << gain << endl;
     if (!Inst[index].previous)
     {
         if (Inst[index].temp_top)
@@ -370,15 +371,21 @@ void del_cell(int index, int gain)
             Inst[index].previous->next = Inst[index].next;
             Inst[index].next->previous = Inst[index].previous;
         }
+        Inst[index].previous = nullptr;
     }
 }
 void move_cell(int index, int temp_gain)
 {
+    // cout << Inst[index].instName << " ";
     del_cell(index, temp_gain);
     if (Inst[index].top)
     {
         if (!bucketA[max_pin - Inst[index].temp_gain].c)
+        {
             bucketA[max_pin - Inst[index].temp_gain].c = &Inst[index];
+            Inst[index].next = nullptr;
+        }
+
         else
         {
             bucketA[max_pin - Inst[index].temp_gain].c->previous = &Inst[index];
@@ -389,7 +396,10 @@ void move_cell(int index, int temp_gain)
     else
     {
         if (!bucketB[max_pin - Inst[index].temp_gain].c)
+        {
             bucketB[max_pin - Inst[index].temp_gain].c = &Inst[index];
+            Inst[index].next = nullptr;
+        }
         else
         {
             bucketB[max_pin - Inst[index].temp_gain].c->previous = &Inst[index];
@@ -400,10 +410,7 @@ void move_cell(int index, int temp_gain)
 }
 void update_gain(int index)
 {
-    // Inst[index]
     del_cell(index, Inst[index].temp_gain);
-    Inst[index].temp_top = !Inst[index].temp_top;
-    Inst[index].locked = 1;
     // Inst[index].nets
     for (int i = 0; i < Inst[index].libCell.Pin_count; i++)
     {
@@ -635,6 +642,10 @@ void update_gain(int index)
             }
         }
     }
+    // Inst[index]
+
+    Inst[index].temp_top = !Inst[index].temp_top;
+    Inst[index].locked = 1;
     return;
 }
 void partition()
@@ -941,23 +952,26 @@ int main(int argc, char *argv[])
         }
     }
     split_half();
-
     initialize_gain();
-    print_set();
-
     print_gain();
-    // cout << bucketA[1].c->next->instName;
-    //  cout << Inst[5].previous->previous->previous->instName;
-    //    num_terminal();
-    /*for (int i = 0; i < NumInstances; i++)
+
+    for (int i = 0; i < 8; i++)
     {
-        cout << Inst[i].gain << " ";
+        update_gain(i);
+        print_gain();
+        // cout << bucketB[2].c->instName << endl;
     }
-    cout << 2 * max_pin + 1 << endl;
-    for (int i = 0; i < 2 * max_pin + 1; i++)
+    for (int i = 0; i < 7; i++)
+    {
+        // cout << bucketA[i].c << endl;
+    }
+    for (int i = 0; i < 7; i++)
     {
         cout << bucketB[i].c << endl;
-    }*/
+    }
+    // cout << bucketB[2].c->instName << bucketB[2].c->next->instName << bucketB[2].c->previous->instName;
+
+    print_set();
 
     // Net_degree_counter();
 
