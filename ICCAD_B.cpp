@@ -70,7 +70,7 @@ public:
     int index;
     int gain, temp_gain, sizeA, sizeB;
     Instance *next, *previous;
-    bool fixed, temp_top;
+    bool locked, temp_top;
     Instance(string instName, string libCellName)
     {
         this->instName = instName;
@@ -93,7 +93,7 @@ public:
         sizeB = TB[index].size_X * TB[index].size_Y;
         next = nullptr;
         previous = nullptr;
-        fixed = 0;
+        locked = 0;
         temp_top = 0;
     }
     void input_nets(int pin, int net)
@@ -102,15 +102,17 @@ public:
     }
     void change_top(bool top) // update top, temptop, IA/IB, libCell of Instance
     {
-        int instindex = stoi(this->instName.erase(0,1))-1;
+        int instindex = stoi(this->instName.erase(0, 1)) - 1;
         this->top = top;
         this->temp_top = top;
-        if (top){
+        if (top)
+        {
             libCell = TA[index];
             IB.erase(remove(IB.begin(), IB.end(), instindex), IB.end());
             IA.push_back(instindex);
         }
-        else{
+        else
+        {
             libCell = TB[index];
             IA.erase(remove(IA.begin(), IA.end(), instindex), IA.end());
             IB.push_back(instindex);
@@ -124,7 +126,8 @@ typedef struct
     int gain;
     Instance *c;
 } Bucket;
-struct Terminal{
+struct Terminal
+{
     string netName;
     int center_x, center_y;
 };
@@ -186,12 +189,6 @@ void split_half()
         if (i % 2 == 0)
         {
             Inst[i].change_top(1);
-            IA.push_back(i);
-        }
-        else
-        {
-
-            IB.push_back(i);
         }
     }
     return;
@@ -199,6 +196,19 @@ void split_half()
 
 void print_set()
 {
+    IA.clear();
+    IB.clear();
+    for (int i = 0; i < NumInstances; i++)
+    {
+        if (Inst[i].top)
+        {
+            IA.push_back(i);
+        }
+        else
+        {
+            IB.push_back(i);
+        }
+    }
     cout << "IA: ";
     for (int i = 0; i < IA.size(); i++)
     {
@@ -223,6 +233,8 @@ void print_gain()
 }
 void initialize_gain()
 {
+
+    // gain initialize
     for (int i = 0; i < NumNets; i++)
     {
         int NA = 0;
@@ -258,10 +270,14 @@ void initialize_gain()
             }
         }
     }
+    // temp_gain and temp_top and locked initialize
     for (int i = 0; i < NumInstances; i++)
     {
         Inst[i].temp_gain = Inst[i].gain;
+        Inst[i].temp_top = Inst[i].top;
+        Inst[i].locked = 0;
     }
+    // bucket initialize
     bucketA.clear();
     for (int i = 0; i < 2 * max_pin + 1; i++)
     {
@@ -270,7 +286,6 @@ void initialize_gain()
         b.c = nullptr;
         bucketA.push_back(b);
     }
-
     bucketB.clear();
     for (int i = 0; i < 2 * max_pin + 1; i++)
     {
@@ -279,13 +294,13 @@ void initialize_gain()
         b.c = nullptr;
         bucketB.push_back(b);
     }
-
     vector<Instance *> pointerA, pointerB;
     for (int i = 0; i < 2 * max_pin + 1; i++)
     {
         pointerA.push_back(nullptr);
         pointerB.push_back(nullptr);
     }
+    // bucket list
     for (int i = 0; i < NumInstances; i++)
     {
         // cout << i << " ";
@@ -298,7 +313,6 @@ void initialize_gain()
             }
             else
             {
-
                 pointerA[max_pin - Inst[i].gain]->next = &Inst[i];
                 Inst[i].previous = pointerA[max_pin - Inst[i].gain];
                 pointerA[max_pin - Inst[i].gain] = &Inst[i];
@@ -313,7 +327,6 @@ void initialize_gain()
             }
             else
             {
-
                 pointerB[max_pin - Inst[i].gain]->next = &Inst[i];
                 Inst[i].previous = pointerB[max_pin - Inst[i].gain];
                 pointerB[max_pin - Inst[i].gain] = &Inst[i];
@@ -387,36 +400,41 @@ void move_cell(int index, int temp_gain)
 }
 void update_gain(int index)
 {
+    // Inst[index]
     del_cell(index, Inst[index].temp_gain);
+    Inst[index].temp_top = !Inst[index].temp_top;
+    Inst[index].locked = 1;
+    // Inst[index].nets
     for (int i = 0; i < Inst[index].libCell.Pin_count; i++)
     {
         int NA = 0;
         int NB = 0;
-        // cout << Inst[index].top << "a";
+        // empty pin
         if (Inst[index].nets[i] < 0)
         {
-            // cout << i << endl;
             continue;
         }
-
-        // cout << Inst[index].nets[i] << endl;
+        // neighbor instances
         for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
         {
-            if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+            if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                 NA++;
             else
                 NB++;
         }
-
         if (Inst[index].top)
         {
             if ((NA == 1) && (NB == 1))
             {
                 for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
                 {
+                    // Inst[index]
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    // locked
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 2;
@@ -430,7 +448,9 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
@@ -444,13 +464,15 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
                         move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
-                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
@@ -464,7 +486,9 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
@@ -478,7 +502,9 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 2;
@@ -492,7 +518,9 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
@@ -503,14 +531,15 @@ void update_gain(int index)
         }
         else
         {
-
             if ((NA == 1) && (NB == 1))
             {
                 for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 2;
@@ -524,7 +553,9 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
@@ -538,14 +569,15 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-
-                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
                         move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
                     }
-                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
@@ -559,7 +591,9 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
@@ -573,7 +607,9 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 2;
@@ -587,7 +623,9 @@ void update_gain(int index)
                 {
                     if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
                         continue;
-                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].top)
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
                     {
                         int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
                         Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain += 1;
@@ -651,49 +689,56 @@ void Net_degree_counter()
     cout << "Bot_NumPins=" << Bot_NumPins << endl;
 }
 
-void net_edges_init(){
-    for(int i = 0; i < NumNets; i++){
+void net_edges_init()
+{
+    for (int i = 0; i < NumNets; i++)
+    {
         int top_left = DieSize_UR_X, top_right = DieSize_LL_X, top_top = DieSize_LL_Y, top_bot = DieSize_UR_Y;
         int bot_left = DieSize_UR_X, bot_right = DieSize_LL_X, bot_top = DieSize_LL_Y, bot_bot = DieSize_UR_Y;
         int pin_x, pin_y;
-        if(Nets[i].Top_degree * Nets[i].Bot_degree > 0){
-            Terminal term{"N"+to_string(i+1),0,0};
+        if (Nets[i].Top_degree * Nets[i].Bot_degree > 0)
+        {
+            Terminal term{"N" + to_string(i + 1), 0, 0};
             Terminals.push_back(term);
-            for(int j = 0; j < Nets[i].Pin_num; j++){
-                string inst_name = "C" + to_string(Nets[i].Ins_Pin[j][0]+1); //index of instance 0=>C1
-                string pin_name = "P" + to_string(Nets[i].Ins_Pin[j][1]+1); //index of instance 0=>C1
-                auto it = find_if(Inst.begin(),Inst.end(),[inst_name](Instance obj){return obj.instName == inst_name;});
+            for (int j = 0; j < Nets[i].Pin_num; j++)
+            {
+                string inst_name = "C" + to_string(Nets[i].Ins_Pin[j][0] + 1); // index of instance 0=>C1
+                string pin_name = "P" + to_string(Nets[i].Ins_Pin[j][1] + 1);  // index of instance 0=>C1
+                auto it = find_if(Inst.begin(), Inst.end(), [inst_name](Instance obj)
+                                  { return obj.instName == inst_name; });
                 LibCell libcell = it->libCell;
-                auto it2 = find_if(libcell.pin,libcell.pin+libcell.Pin_count,[pin_name](Pin pin){return pin.pinName == pin_name;});
-                if((it==Inst.end() )|| (it2 == libcell.pin + libcell.Pin_count)){
+                auto it2 = find_if(libcell.pin, libcell.pin + libcell.Pin_count, [pin_name](Pin pin)
+                                   { return pin.pinName == pin_name; });
+                if ((it == Inst.end()) || (it2 == libcell.pin + libcell.Pin_count))
+                {
                     cout << "net_edges_init error" << endl;
                 }
                 pin_x = it->locationX + it2->pinLocationX;
                 pin_y = it->locationY + it2->pinLocationY;
-                if(it->top == 1){
+                if (it->top == 1)
+                {
                     top_left = (top_left > pin_x) ? pin_x : top_left;
                     top_right = (top_right < pin_x) ? pin_x : top_right;
                     top_top = (top_top < pin_y) ? pin_y : top_top;
                     top_bot = (top_bot > pin_y) ? pin_y : top_bot;
                 }
-                else if(it->top == 0){
+                else if (it->top == 0)
+                {
                     bot_left = (bot_left > pin_x) ? pin_x : bot_left;
                     bot_right = (bot_right < pin_x) ? pin_x : bot_right;
                     bot_top = (bot_top < pin_y) ? pin_y : bot_top;
                     bot_bot = (bot_bot > pin_y) ? pin_y : bot_bot;
                 }
-
             }
-        vector<int> v = {top_left,top_right,bot_left,bot_right};
-        sort(v.begin(),v.end());
-        Nets[i].edges[0] = v[1];
-        Nets[i].edges[1] = v[2];
-        v = {top_top, top_bot, bot_top, bot_bot};
-        Nets[i].edges[2] = v[1];
-        Nets[i].edges[3] = v[2];
-        
+            vector<int> v = {top_left, top_right, bot_left, bot_right};
+            sort(v.begin(), v.end());
+            Nets[i].edges[0] = v[1];
+            Nets[i].edges[1] = v[2];
+            v = {top_top, top_bot, bot_top, bot_bot};
+            Nets[i].edges[2] = v[1];
+            Nets[i].edges[3] = v[2];
+        }
     }
-}
 }
 
 int main(int argc, char *argv[])
@@ -898,9 +943,8 @@ int main(int argc, char *argv[])
     split_half();
 
     initialize_gain();
-    partition();
-    print_gain();
-    update_gain(2);
+    print_set();
+
     print_gain();
     // cout << bucketA[1].c->next->instName;
     //  cout << Inst[5].previous->previous->previous->instName;
