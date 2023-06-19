@@ -24,8 +24,7 @@ int NumInstances, NumNets;
 int NumMacro = 0;
 
 // partition
-vector<int>
-    IA, IB; // vector of index of instructions (0 => C1), not sorted. IA for top / IB for bot.
+vector<int> IA, IB; // vector of index of instructions (0 => C1), not sorted. IA for top / IB for bot.
 int max_size = 0;
 int max_pin = 0;
 // 其他全域
@@ -752,6 +751,12 @@ void net_edges_init()
     }
 }
 
+//////////////////////////////// NTUplace Associated Functions ////////////////////////////////
+void NTUplace_TOP(string filename);
+void NTUplace_BOT(string filename);
+void NTUplace_Get_TOP_Result(string filename);
+//////////////////////////////// NTUplace Associated Functions ////////////////////////////////
+
 int main(int argc, char *argv[])
 {
     fstream fin;
@@ -951,17 +956,16 @@ int main(int argc, char *argv[])
             }
         }
     }
-    split_half();
-    initialize_gain();
-    print_gain();
+    partition_init();
 
-    for (int i = 0; i < 8; i++)
-    {
-        update_gain(i);
-        print_gain();
-        // cout << bucketB[2].c->instName << endl;
-    }
-    for (int i = 0; i < 7; i++)
+    initialize_gain();
+    print_set();
+    Net_degree_counter();
+    // print_gain();
+    // cout << bucketA[1].c->next->instName;
+    //  cout << Inst[5].previous->previous->previous->instName;
+    //    num_terminal();
+    /*for (int i = 0; i < NumInstances; i++)
     {
         // cout << bucketA[i].c << endl;
     }
@@ -973,29 +977,40 @@ int main(int argc, char *argv[])
 
     print_set();
 
-    // Net_degree_counter();
-
-    // for(int i=0; i<NumNets; i++){
-    //     cout<<"Net"<<i+1<<": "<<"top="<<Nets[i].Top_degree<<", bot="<<Nets[i].Bot_degree<<endl;
-    // }
+    // print_set();
 
     // -------------- NTUplace -------------- //
+
+    string Top_NTUplace_filename, Bot_NTUplace_filename;
+    Top_NTUplace_filename = "TOP_PLACE";
+    Bot_NTUplace_filename = "BOT_PLACE";
+    // NTUplace_TOP(Top_NTUplace_filename);
+    // NTUplace_BOT(Bot_NTUplace_filename);
+    NTUplace_Get_TOP_Result(Top_NTUplace_filename);
+    
+    for(int i=0; i<IA.size(); i++){
+        cout<<Inst[IA[i]].instName<<", left low (x,y) = ("<<Inst[IA[i]].locationX<<","<<Inst[IA[i]].locationY<<")"<<endl;
+    }
+
+
+}
+
+//////////////////////////////// NTUplace Associated Functions ////////////////////////////////
+void NTUplace_TOP(string filename){
     // .aux
     fstream faux;
-    faux.open("topdie.aux", ios::out);
-    faux << "RowBasedPlacement : topdie.nodes topdie.nets topdie.wts topdie.pl topdie.scl";
+    faux.open(filename+".aux", ios::out);
+    faux << "RowBasedPlacement : "<<filename<<".nodes "<<filename<<".nets "<<filename<<".wts "<<filename<<".pl "<<filename<<".scl";
     faux.close();
     //.nodes
     fstream fnodes;
-    fnodes.open("topdie.nodes", ios::out);
-    fnodes << "UCLA nodes 1.0" << endl
-           << endl;
-    fnodes << "NumNodes : " << IA.size() << endl;
-    fnodes << "NumTerminals : " << 0 << endl;
-    // Terminal還沒存進去喔
-    for (int i = 0; i < IA.size(); i++)
-    {
-        fnodes << "\t" << Inst[IA[i]].instName << "\t" << Inst[IA[i]].libCell.size_X << "\t" << Inst[IA[i]].libCell.size_Y << endl;
+    fnodes.open(filename+".nodes", ios::out);
+    fnodes<<"UCLA nodes 1.0"<<endl<<endl;
+    fnodes<<"NumNodes : "<<IA.size()<<endl;
+    fnodes<<"NumTerminals : "<<0<<endl;
+        //Terminal還沒存進去喔
+    for(int i=0; i<IA.size(); i++){
+        fnodes<<"\t"<<Inst[IA[i]].instName<<"\t"<<Inst[IA[i]].libCell.size_X<<"\t"<<Inst[IA[i]].libCell.size_Y<<endl;
     }
     //.nets
     // int Top_net_degree[NumNets] = {0};
@@ -1005,7 +1020,7 @@ int main(int argc, char *argv[])
     // }
 
     fstream fnets;
-    fnets.open("topdie.nets", ios::out);
+    fnets.open(filename+".nets", ios::out);
     fnets << "UCLA nets 1.0" << endl
           << endl;
     fnets << "NumNets : " << NumNets << endl;
@@ -1028,7 +1043,7 @@ int main(int argc, char *argv[])
     }
     //.wts
     fstream fwts;
-    fwts.open("topdie.wts", ios::out);
+    fwts.open(filename+".wts", ios::out);
     fwts << "UCLA wts 1.0" << endl
          << endl;
     for (int i = 0; i < IA.size(); i++)
@@ -1037,26 +1052,24 @@ int main(int argc, char *argv[])
     }
     //.pl
     fstream fpl;
-    fpl.open("topdie.pl", ios::out);
+    fpl.open(filename+".pl", ios::out);
     fpl << "UCLA pl 1.0" << endl
         << endl;
     for (int i = 0; i < IA.size(); i++)
     {
         if (!Inst[IA[i]].libCell.is_Macro)
         {
-            fpl << Inst[IA[i]].instName << "\t" << 0 << "\t" << 0 << " : "
+            fpl << Inst[IA[i]].instName << "\t" << DieSize_UR_X/2 << "\t" << DieSize_UR_Y/2 << " : "
                 << "N" << endl;
         }
-        else
-        {
-            fpl << Inst[IA[i]].instName << "\t" << 0 << "\t" << 0 << " : "
-                << "FS" << endl;
+        else{
+            fpl<<Inst[IA[i]].instName<<"\t"<<DieSize_UR_X/2<<"\t"<<DieSize_UR_Y/2<<" : "<<"E"<<endl;
         }
     }
 
     //.scl
     fstream fscl;
-    fscl.open("topdie.scl", ios::out);
+    fscl.open(filename+".scl", ios::out);
     fscl << "UCLA scl 1.0" << endl
          << endl;
     fscl << "Numrows : " << TopDieRows_repeat_count << endl
@@ -1078,7 +1091,136 @@ int main(int argc, char *argv[])
              << "Sitesymmetry :\t"
              << "Y" << endl;
         fscl << "\t"
-             << "SubrowOrigin :\t" << 0 << " Numsites :\t" << DieSize_UR_Y << endl;
+             << "SubrowOrigin :\t" << 0 << " Numsites :\t" << DieSize_UR_X << endl;
         fscl << "End" << endl;
+    }
+}
+
+void NTUplace_BOT(string filename){
+    // .aux
+    fstream faux;
+    faux.open(filename+".aux", ios::out);
+    faux << "RowBasedPlacement : "<<filename<<".nodes "<<filename<<".nets "<<filename<<".wts "<<filename<<".pl "<<filename<<".scl";
+    faux.close();
+    //.nodes
+    fstream fnodes;
+    fnodes.open(filename+".nodes", ios::out);
+    fnodes<<"UCLA nodes 1.0"<<endl<<endl;
+    fnodes<<"NumNodes : "<<IB.size()<<endl;
+    fnodes<<"NumTerminals : "<<0<<endl;
+        //Terminal還沒存進去喔
+    for(int i=0; i<IB.size(); i++){
+        fnodes<<"\t"<<Inst[IB[i]].instName<<"\t"<<Inst[IB[i]].libCell.size_X<<"\t"<<Inst[IB[i]].libCell.size_Y<<endl;
+    }
+    //.nets
+    // int Top_net_degree[NumNets] = {0};
+    // int Top_num_pin = 0;
+    // for(int i=0; i<NumNets; i++){
+
+    // }
+
+    fstream fnets;
+    fnets.open(filename+".nets", ios::out);
+    fnets << "UCLA nets 1.0" << endl
+          << endl;
+    fnets << "NumNets : " << NumNets << endl;
+    fnets << "NumPins : " << Bot_NumPins << endl;
+    double pin_x_offset = 0;
+    double pin_y_offset = 0;
+    for (int i = 0; i < NumNets; i++)
+    {
+        fnets << "NetDegree : " << Nets[i].Bot_degree << "\t"
+              << "N" << i + 1 << endl;
+        for (int j = 0; j < Nets[i].Pin_num; j++)
+        {
+            if (!Inst[Nets[i].Ins_Pin[j][0]].top)
+            {
+                pin_x_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationX - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_X / 2;
+                pin_y_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationY - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_Y / 2;
+                fnets << "\t" << Inst[Nets[i].Ins_Pin[j][0]].instName << " I : " << pin_x_offset << " " << pin_y_offset << endl;
+            }
+        }
+    }
+    //.wts
+    fstream fwts;
+    fwts.open(filename+".wts", ios::out);
+    fwts << "UCLA wts 1.0" << endl
+         << endl;
+    for (int i = 0; i < IB.size(); i++)
+    {
+        fwts << "\t" << Inst[IB[i]].instName << "\t" << 0 << endl;
+    }
+    //.pl
+    fstream fpl;
+    fpl.open(filename+".pl", ios::out);
+    fpl << "UCLA pl 1.0" << endl
+        << endl;
+    for (int i = 0; i < IB.size(); i++)
+    {
+        if (!Inst[IB[i]].libCell.is_Macro)
+        {
+            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X/2 << "\t" << DieSize_UR_Y/2 << " : "
+                << "N" << endl;
+        }
+        else{
+            fpl<<Inst[IB[i]].instName<<"\t"<<DieSize_UR_X/2<<"\t"<<DieSize_UR_Y/2<<" : "<<"E"<<endl;
+        }
+    }
+
+    //.scl
+    fstream fscl;
+    fscl.open(filename+".scl", ios::out);
+    fscl << "UCLA scl 1.0" << endl
+         << endl;
+    fscl << "Numrows : " << BottomDieRows_repeat_count << endl
+         << endl;
+    for (int i = 0; i < BottomDieRows_repeat_count; i++)
+    {
+        fscl << "CoreRow Horizontal" << endl;
+        fscl << "\t"
+             << "Coordinate :\t" << i * BottomDieRows_row_height << endl;
+        fscl << "\t"
+             << "Height :\t" << BottomDieRows_row_height << endl;
+        fscl << "\t"
+             << "Sitewidth :\t" << 1 << endl;
+        fscl << "\t"
+             << "Sitespacing :\t" << 1 << endl;
+        fscl << "\t"
+             << "Siteorient :\t" << 1 << endl;
+        fscl << "\t"
+             << "Sitesymmetry :\t"
+             << "Y" << endl;
+        fscl << "\t"
+             << "SubrowOrigin :\t" << 0 << " Numsites :\t" << DieSize_UR_X << endl;
+        fscl << "End" << endl;
+    }
+}
+
+void NTUplace_Get_TOP_Result(string filename){
+    string a_line;            // File read var. 
+    vector<string> many_word; // File read var.
+    vector<string> word;
+    fstream TOP_Result_File;
+    TOP_Result_File.open(filename+".ntup.pl");
+    if(TOP_Result_File){
+        cout<<"File open!"<<endl;
+        getline(TOP_Result_File, a_line);
+        getline(TOP_Result_File, a_line);
+        while (getline(TOP_Result_File, a_line)){
+            many_word = split(a_line, ' ');
+            if(many_word.size()==0){break;} // Read all instances
+            word = split(many_word[0], '\t');
+            Inst[stoi(many_word[0])-1].locationX = stoi(word[1]); // Update LL_X in instances
+            Inst[stoi(many_word[0])-1].locationY = stoi(word[2]); // Update LL_Y in instances
+            // Rotate angle
+            if(many_word[2]=="N"){Inst[stoi(word[0])-1].rotate=0;}
+            else if(many_word[2]=="W"){Inst[stoi(word[0])-1].rotate=90;}
+            else if(many_word[2]=="S"){Inst[stoi(word[0])-1].rotate=180;}
+            else if(many_word[2]=="E"){Inst[stoi(word[0])-1].rotate=270;}
+        }
+        
+    }
+    else {
+        cout<<"TOP_Result_File doesn't exist..."<<endl;
     }
 }
