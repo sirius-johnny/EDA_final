@@ -28,7 +28,7 @@ vector<int> IA, IB; // vector of index of instructions (0 => C1), not sorted. IA
 int max_size = 0;
 int max_pin = 0;
 // 其他全域
-
+int* slot_arr; // a pseudo 3d array
 // Instance 面積總和
 long bot_occupied = 0;
 long top_occupied = 0;
@@ -39,7 +39,6 @@ typedef struct
     int Top_degree;
     int Bot_degree;
     int **Ins_Pin;
-    int edges[4]; // left,right,top,bottom
 } Net;
 
 typedef struct
@@ -129,7 +128,9 @@ typedef struct
 struct Terminal
 {
     string netName;
+    int netNum;
     int center_x, center_y;
+    int edges[4]; // left,right,bottom,left
 };
 vector<Terminal> Terminals;
 vector<Instance> Inst;
@@ -700,56 +701,215 @@ void Net_degree_counter()
     cout << "Bot_NumPins=" << Bot_NumPins << endl;
 }
 
-void net_edges_init()
-{
-    for (int i = 0; i < NumNets; i++)
-    {
+void net_edges_init(){
+    for(int i = 0; i < NumNets; i++){
         int top_left = DieSize_UR_X, top_right = DieSize_LL_X, top_top = DieSize_LL_Y, top_bot = DieSize_UR_Y;
         int bot_left = DieSize_UR_X, bot_right = DieSize_LL_X, bot_top = DieSize_LL_Y, bot_bot = DieSize_UR_Y;
         int pin_x, pin_y;
-        if (Nets[i].Top_degree * Nets[i].Bot_degree > 0)
-        {
-            Terminal term{"N" + to_string(i + 1), 0, 0};
-            Terminals.push_back(term);
-            for (int j = 0; j < Nets[i].Pin_num; j++)
-            {
-                string inst_name = "C" + to_string(Nets[i].Ins_Pin[j][0] + 1); // index of instance 0=>C1
-                string pin_name = "P" + to_string(Nets[i].Ins_Pin[j][1] + 1);  // index of instance 0=>C1
-                auto it = find_if(Inst.begin(), Inst.end(), [inst_name](Instance obj)
-                                  { return obj.instName == inst_name; });
+        if(Nets[i].Top_degree * Nets[i].Bot_degree > 0){
+            Terminal term{"N"+to_string(i+1),i,0,0,{0,0,0,0}};
+            for(int j = 0; j < Nets[i].Pin_num; j++){
+                string inst_name = "C" + to_string(Nets[i].Ins_Pin[j][0]+1); //index of instance 0=>C1
+                string pin_name = "P" + to_string(Nets[i].Ins_Pin[j][1]+1); //index of instance 0=>C1
+                auto it = find_if(Inst.begin(),Inst.end(),[inst_name](Instance obj){return obj.instName == inst_name;});
                 LibCell libcell = it->libCell;
-                auto it2 = find_if(libcell.pin, libcell.pin + libcell.Pin_count, [pin_name](Pin pin)
-                                   { return pin.pinName == pin_name; });
-                if ((it == Inst.end()) || (it2 == libcell.pin + libcell.Pin_count))
-                {
+                auto it2 = find_if(libcell.pin,libcell.pin+libcell.Pin_count,[pin_name](Pin pin){return pin.pinName == pin_name;});
+                if((it==Inst.end() )|| (it2 == libcell.pin + libcell.Pin_count)){
                     cout << "net_edges_init error" << endl;
                 }
                 pin_x = it->locationX + it2->pinLocationX;
                 pin_y = it->locationY + it2->pinLocationY;
-                if (it->top == 1)
-                {
+                if(it->top == 1){
                     top_left = (top_left > pin_x) ? pin_x : top_left;
                     top_right = (top_right < pin_x) ? pin_x : top_right;
                     top_top = (top_top < pin_y) ? pin_y : top_top;
                     top_bot = (top_bot > pin_y) ? pin_y : top_bot;
                 }
-                else if (it->top == 0)
-                {
+                else if(it->top == 0){
                     bot_left = (bot_left > pin_x) ? pin_x : bot_left;
                     bot_right = (bot_right < pin_x) ? pin_x : bot_right;
                     bot_top = (bot_top < pin_y) ? pin_y : bot_top;
                     bot_bot = (bot_bot > pin_y) ? pin_y : bot_bot;
                 }
+
             }
-            vector<int> v = {top_left, top_right, bot_left, bot_right};
-            sort(v.begin(), v.end());
-            Nets[i].edges[0] = v[1];
-            Nets[i].edges[1] = v[2];
+            vector<int> v = {top_left,top_right,bot_left,bot_right};
+            sort(v.begin(),v.end());//default : increasing
+            term.edges[0] = v[1];
+            term.edges[0] = ceil((term.edges[0]-TerminalSpacing-TerminalSize_X/2)/(TerminalSize_X+TerminalSpacing));
+            term.edges[1] = v[2];
+            term.edges[1] = floor((term.edges[1]-TerminalSpacing-TerminalSize_X/2)/(TerminalSize_X+TerminalSpacing));
             v = {top_top, top_bot, bot_top, bot_bot};
-            Nets[i].edges[2] = v[1];
-            Nets[i].edges[3] = v[2];
+            sort(v.begin(),v.end());
+            term.edges[2] = v[1];
+            term.edges[2] = ceil((term.edges[2]-TerminalSpacing-TerminalSize_Y/2)/(TerminalSize_Y+TerminalSpacing));
+            term.edges[3] = v[2];
+            term.edges[3] = floor((term.edges[3]-TerminalSpacing-TerminalSize_Y/2)/(TerminalSize_Y+TerminalSpacing));
+
+            if(term.edges[0]>term.edges[1]){
+                swap(term.edges[0],term.edges[1]);
+            }
+            if(term.edges[2]>term.edges[3]){
+                swap(term.edges[2],term.edges[3]);
+            }
+            Terminals.push_back(term);
+            
         }
     }
+    return;
+}
+bool compare_Netsize(Terminal t1, Terminal t2){ //to sort Terminals in increasing netsize order
+    return((t1.edges[1]-t1.edges[0])*(t1.edges[3]-t1.edges[2])<(t2.edges[1]-t2.edges[0])*(t2.edges[3]-t2.edges[2]));
+}
+void slot_init(int &sizex, int &sizey){
+    sizex = floor(DieSize_UR_X-(2*TerminalSpacing+TerminalSize_X)/(TerminalSpacing+TerminalSize_X));
+    sizey = floor(DieSize_UR_Y-(2*TerminalSpacing+TerminalSize_Y)/(TerminalSpacing+TerminalSize_Y));
+    slot_arr = new int [sizex*sizey*2]();
+    for(auto terminal:Terminals){ //bounded in slot array
+        terminal.edges[0] = max(0,terminal.edges[0]);
+        terminal.edges[1] = min(sizex,terminal.edges[1]);
+        terminal.edges[2] = max(0,terminal.edges[2]);
+        terminal.edges[3] = min(sizey,terminal.edges[3]);
+    }
+    sort(Terminals.begin(),Terminals.end(),compare_Netsize); //sort Terminals in increasing netsize order
+    for(auto terminal:Terminals){
+        for(int i = terminal.edges[0]; i<=terminal.edges[1]; i++){
+            for(int j = terminal.edges[2]; j<=terminal.edges[3]; j++){
+                //address = ia + z * (sizex * sizey) + y * (sizex) + x
+                slot_arr[0 * sizex * sizey + j * sizex + i] += 1; //layer of nets on the grid
+            }
+        }
+    }
+    return;
+}
+bool check_replace(Terminal terminal, int x, int y, int sizex, int sizey){
+    int min_layer = 2^30;
+    int temp_x = 0, temp_y = 0;
+    bool found = false;
+    for(int i = terminal.edges[0]; i<=terminal.edges[1]; i++){
+        for(int j = terminal.edges[2]; j<=terminal.edges[3]; j++){
+            if((slot_arr[1 * sizex * sizey + j * sizex + i] == 0) &&(slot_arr[0 * sizex * sizey + j * sizex + i] < min_layer)){
+                min_layer = slot_arr[0 * sizex * sizey + j * sizex + i];
+                temp_x = i;
+                temp_y = j;
+                found = true;
+            }
+        }
+    }
+    if(found){
+        slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal.netNum;
+        slot_arr[1 * sizex * sizey + y * sizex + x] = 0; 
+        terminal.center_x = temp_x;
+        terminal.center_y = temp_y;
+    }
+    return (found);
+
+}
+bool ripple(Terminal terminal, int sizex, int sizey){
+    for(int i = terminal.edges[0]; i<=terminal.edges[1]; i++){
+        for(int j = terminal.edges[2]; j<=terminal.edges[3]; j++){
+            int occupying_term = slot_arr[1 * sizex * sizey + j * sizex + i];
+            auto it = find_if(Terminals.begin(),Terminals.end(),[occupying_term](Terminal term){return term.netNum == occupying_term;});
+            if(check_replace((*it), i, j, sizex, sizey)){
+                slot_arr[1 * sizex * sizey + j * sizex + i] = terminal.netNum;
+                terminal.center_x = i;
+                terminal.center_y = j;
+                return (true);
+            }
+        }
+    }
+    return(false);
+}
+void search_slot(Terminal terminal, int sizex, int sizey){
+    bool found = false;
+    int i = 0, min_layer = 2^30, temp_x, temp_y;
+    int l = terminal.edges[0], r = terminal.edges[1], b = terminal.edges[2], t = terminal.edges[3];
+    while(found == false){
+        if((l-i) >= 0){
+            for(int j = max(0,b-i); j <= min(sizey,t+i); j++){
+                if((slot_arr[1 * sizex * sizey + j * sizex + (l-i)] == 0) &&(slot_arr[0 * sizex * sizey + j * sizex + (l-i)] < min_layer)){
+                    min_layer = slot_arr[0 * sizex * sizey + j * sizex + (l-i)];
+                    temp_x = (l-i);
+                    temp_y = j;
+                    found = true;
+                }
+            }
+        }
+        if((r+i) <= sizex){
+            for(int j = max(0,b-i); j <= min(sizey,t+i); j++){
+                if((slot_arr[1 * sizex * sizey + j * sizex + (r+i)] == 0) &&(slot_arr[0 * sizex * sizey + j * sizex + (r+i)] < min_layer)){
+                    min_layer = slot_arr[0 * sizex * sizey + j * sizex + (r+i)];
+                    temp_x = (r+i);
+                    temp_y = j;
+                    found = true;
+                }
+            }
+            
+        }
+        if((b-i) >= 0){
+            for(int j = max(0,l-i); j <= min(sizex,r+i); j++){
+                if((slot_arr[1 * sizex * sizey + (b-i) * sizex + j] == 0) &&(slot_arr[0 * sizex * sizey + (b-i) * sizex + j] < min_layer)){
+                    min_layer = slot_arr[0 * sizex * sizey + (b-i) * sizex + j];
+                    temp_x = j;
+                    temp_y = b-i;
+                    found = true;
+                }
+            }
+            
+        }
+        if((t+i) <= sizey){
+            for(int j = max(0,l-i); j <= min(sizex,r+i); j++){
+                if((slot_arr[1 * sizex * sizey + (t+i) * sizex + j] == 0) &&(slot_arr[0 * sizex * sizey + (t+i) * sizex + j] < min_layer)){
+                    min_layer = slot_arr[0 * sizex * sizey + (t+i) * sizex + j];
+                    temp_x = j;
+                    temp_y = t+i;
+                    found = true;
+                }
+            }
+            
+        }
+        i = i + 1;
+    }
+    slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal.netNum;
+    terminal.center_x = temp_x;
+    terminal.center_y = temp_y;
+}
+void place_terminal(const int &sizex, const int &sizey){ // placing terminals by searching 2 levels
+    int temp_x=0, temp_y=0, min_layer = 2^30;
+    bool found = false;
+    for(auto terminal:Terminals){
+        temp_x=0; temp_y=0; min_layer = 2^30;
+        found = false;
+        for(int i = terminal.edges[0]; i<=terminal.edges[1]; i++){
+            found = false;
+            for(int j = terminal.edges[2]; j<=terminal.edges[3]; j++){
+
+                if((slot_arr[1 * sizex * sizey + j * sizex + i] == 0)&&(slot_arr[0 * sizex * sizey + j * sizex + i] < min_layer) ){
+                    temp_x = i;
+                    temp_y = j;
+                    min_layer = slot_arr[0 * sizex * sizey + j * sizex + i];
+                    found = true;
+                }
+            }
+        }
+        if(found){
+            slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal.netNum;
+            terminal.center_x = temp_x;
+            terminal.center_y = temp_y;
+        }
+        else{
+            if(!ripple(terminal, sizex, sizey)){
+                search_slot(terminal, sizex, sizey);
+            }
+        }
+        for(int i = terminal.edges[0]; i<=terminal.edges[1]; i++){
+            for(int j = terminal.edges[2]; j<=terminal.edges[3]; j++){
+                slot_arr[0 * sizex * sizey + j * sizex + i] -= 1;
+            }
+        }
+        
+    }
+    return;
 }
 
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
@@ -1007,6 +1167,18 @@ int main(int argc, char *argv[])
     {
         cout << Inst[IA[i]].instName << ", left low (x,y) = (" << Inst[IA[i]].locationX << "," << Inst[IA[i]].locationY << ")" << endl;
     }
+
+    /// 以下是 for terminal placing 的，結果會存在terminal.center_x跟terminal.center_y裡 ///
+    /// 輸出格式為 terminal.netName terminal.center_x terminal.center_y ///
+    net_edges_init();
+    int sizex = 0, sizey = 0;
+    slot_init(sizex, sizey);
+    place_terminal(sizex, sizey);
+    for(auto terminal:Terminals){
+        terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X/2 ;
+        terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y/2 ;
+    }
+    /// terminal end ///
 }
 
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
