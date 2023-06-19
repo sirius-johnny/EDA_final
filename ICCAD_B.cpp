@@ -337,7 +337,7 @@ void initialize_gain()
 }
 void del_cell(int index, int gain)
 {
-    cout << "delete C" << index + 1 << " with gain " << gain << endl;
+    // cout << "delete C" << index + 1 << " with gain " << gain << endl;
     if (!Inst[index].previous)
     {
         if (Inst[index].temp_top)
@@ -760,7 +760,7 @@ void NTUplace_Get_TOP_Result(string filename);
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case1.txt", ios::in);
+    fin.open("ProblemB_case4.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -956,16 +956,29 @@ int main(int argc, char *argv[])
             }
         }
     }
-    partition_init();
-
+    // partition_init();
+    split_half();
     initialize_gain();
-    print_set();
+    // print_set();
+    for (int i = 0; i < NumInstances; i++)
+    {
+        update_gain(i);
+    }
+    for (int i = 0; i < 7; i++)
+    {
+        // cout << bucketA[i].c;
+    }
+    for (int i = 0; i < 7; i++)
+    {
+        // cout << bucketB[i].c;
+    }
+    print_gain();
     Net_degree_counter();
     // print_gain();
     // cout << bucketA[1].c->next->instName;
     //  cout << Inst[5].previous->previous->previous->instName;
     //    num_terminal();
-    /*for (int i = 0; i < NumInstances; i++)
+    for (int i = 0; i < NumInstances; i++)
     {
         // cout << bucketA[i].c << endl;
     }
@@ -987,30 +1000,32 @@ int main(int argc, char *argv[])
     // NTUplace_TOP(Top_NTUplace_filename);
     // NTUplace_BOT(Bot_NTUplace_filename);
     NTUplace_Get_TOP_Result(Top_NTUplace_filename);
-    
-    for(int i=0; i<IA.size(); i++){
-        cout<<Inst[IA[i]].instName<<", left low (x,y) = ("<<Inst[IA[i]].locationX<<","<<Inst[IA[i]].locationY<<")"<<endl;
+
+    for (int i = 0; i < IA.size(); i++)
+    {
+        cout << Inst[IA[i]].instName << ", left low (x,y) = (" << Inst[IA[i]].locationX << "," << Inst[IA[i]].locationY << ")" << endl;
     }
-
-
 }
 
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
-void NTUplace_TOP(string filename){
+void NTUplace_TOP(string filename)
+{
     // .aux
     fstream faux;
-    faux.open(filename+".aux", ios::out);
-    faux << "RowBasedPlacement : "<<filename<<".nodes "<<filename<<".nets "<<filename<<".wts "<<filename<<".pl "<<filename<<".scl";
+    faux.open(filename + ".aux", ios::out);
+    faux << "RowBasedPlacement : " << filename << ".nodes " << filename << ".nets " << filename << ".wts " << filename << ".pl " << filename << ".scl";
     faux.close();
     //.nodes
     fstream fnodes;
-    fnodes.open(filename+".nodes", ios::out);
-    fnodes<<"UCLA nodes 1.0"<<endl<<endl;
-    fnodes<<"NumNodes : "<<IA.size()<<endl;
-    fnodes<<"NumTerminals : "<<0<<endl;
-        //Terminal還沒存進去喔
-    for(int i=0; i<IA.size(); i++){
-        fnodes<<"\t"<<Inst[IA[i]].instName<<"\t"<<Inst[IA[i]].libCell.size_X<<"\t"<<Inst[IA[i]].libCell.size_Y<<endl;
+    fnodes.open(filename + ".nodes", ios::out);
+    fnodes << "UCLA nodes 1.0" << endl
+           << endl;
+    fnodes << "NumNodes : " << IA.size() << endl;
+    fnodes << "NumTerminals : " << 0 << endl;
+    // Terminal還沒存進去喔
+    for (int i = 0; i < IA.size(); i++)
+    {
+        fnodes << "\t" << Inst[IA[i]].instName << "\t" << Inst[IA[i]].libCell.size_X << "\t" << Inst[IA[i]].libCell.size_Y << endl;
     }
     //.nets
     // int Top_net_degree[NumNets] = {0};
@@ -1020,7 +1035,7 @@ void NTUplace_TOP(string filename){
     // }
 
     fstream fnets;
-    fnets.open(filename+".nets", ios::out);
+    fnets.open(filename + ".nets", ios::out);
     fnets << "UCLA nets 1.0" << endl
           << endl;
     fnets << "NumNets : " << NumNets << endl;
@@ -1043,7 +1058,7 @@ void NTUplace_TOP(string filename){
     }
     //.wts
     fstream fwts;
-    fwts.open(filename+".wts", ios::out);
+    fwts.open(filename + ".wts", ios::out);
     fwts << "UCLA wts 1.0" << endl
          << endl;
     for (int i = 0; i < IA.size(); i++)
@@ -1052,24 +1067,26 @@ void NTUplace_TOP(string filename){
     }
     //.pl
     fstream fpl;
-    fpl.open(filename+".pl", ios::out);
+    fpl.open(filename + ".pl", ios::out);
     fpl << "UCLA pl 1.0" << endl
         << endl;
     for (int i = 0; i < IA.size(); i++)
     {
         if (!Inst[IA[i]].libCell.is_Macro)
         {
-            fpl << Inst[IA[i]].instName << "\t" << DieSize_UR_X/2 << "\t" << DieSize_UR_Y/2 << " : "
+            fpl << Inst[IA[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
                 << "N" << endl;
         }
-        else{
-            fpl<<Inst[IA[i]].instName<<"\t"<<DieSize_UR_X/2<<"\t"<<DieSize_UR_Y/2<<" : "<<"E"<<endl;
+        else
+        {
+            fpl << Inst[IA[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+                << "E" << endl;
         }
     }
 
     //.scl
     fstream fscl;
-    fscl.open(filename+".scl", ios::out);
+    fscl.open(filename + ".scl", ios::out);
     fscl << "UCLA scl 1.0" << endl
          << endl;
     fscl << "Numrows : " << TopDieRows_repeat_count << endl
@@ -1096,21 +1113,24 @@ void NTUplace_TOP(string filename){
     }
 }
 
-void NTUplace_BOT(string filename){
+void NTUplace_BOT(string filename)
+{
     // .aux
     fstream faux;
-    faux.open(filename+".aux", ios::out);
-    faux << "RowBasedPlacement : "<<filename<<".nodes "<<filename<<".nets "<<filename<<".wts "<<filename<<".pl "<<filename<<".scl";
+    faux.open(filename + ".aux", ios::out);
+    faux << "RowBasedPlacement : " << filename << ".nodes " << filename << ".nets " << filename << ".wts " << filename << ".pl " << filename << ".scl";
     faux.close();
     //.nodes
     fstream fnodes;
-    fnodes.open(filename+".nodes", ios::out);
-    fnodes<<"UCLA nodes 1.0"<<endl<<endl;
-    fnodes<<"NumNodes : "<<IB.size()<<endl;
-    fnodes<<"NumTerminals : "<<0<<endl;
-        //Terminal還沒存進去喔
-    for(int i=0; i<IB.size(); i++){
-        fnodes<<"\t"<<Inst[IB[i]].instName<<"\t"<<Inst[IB[i]].libCell.size_X<<"\t"<<Inst[IB[i]].libCell.size_Y<<endl;
+    fnodes.open(filename + ".nodes", ios::out);
+    fnodes << "UCLA nodes 1.0" << endl
+           << endl;
+    fnodes << "NumNodes : " << IB.size() << endl;
+    fnodes << "NumTerminals : " << 0 << endl;
+    // Terminal還沒存進去喔
+    for (int i = 0; i < IB.size(); i++)
+    {
+        fnodes << "\t" << Inst[IB[i]].instName << "\t" << Inst[IB[i]].libCell.size_X << "\t" << Inst[IB[i]].libCell.size_Y << endl;
     }
     //.nets
     // int Top_net_degree[NumNets] = {0};
@@ -1120,7 +1140,7 @@ void NTUplace_BOT(string filename){
     // }
 
     fstream fnets;
-    fnets.open(filename+".nets", ios::out);
+    fnets.open(filename + ".nets", ios::out);
     fnets << "UCLA nets 1.0" << endl
           << endl;
     fnets << "NumNets : " << NumNets << endl;
@@ -1143,7 +1163,7 @@ void NTUplace_BOT(string filename){
     }
     //.wts
     fstream fwts;
-    fwts.open(filename+".wts", ios::out);
+    fwts.open(filename + ".wts", ios::out);
     fwts << "UCLA wts 1.0" << endl
          << endl;
     for (int i = 0; i < IB.size(); i++)
@@ -1152,24 +1172,26 @@ void NTUplace_BOT(string filename){
     }
     //.pl
     fstream fpl;
-    fpl.open(filename+".pl", ios::out);
+    fpl.open(filename + ".pl", ios::out);
     fpl << "UCLA pl 1.0" << endl
         << endl;
     for (int i = 0; i < IB.size(); i++)
     {
         if (!Inst[IB[i]].libCell.is_Macro)
         {
-            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X/2 << "\t" << DieSize_UR_Y/2 << " : "
+            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
                 << "N" << endl;
         }
-        else{
-            fpl<<Inst[IB[i]].instName<<"\t"<<DieSize_UR_X/2<<"\t"<<DieSize_UR_Y/2<<" : "<<"E"<<endl;
+        else
+        {
+            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+                << "E" << endl;
         }
     }
 
     //.scl
     fstream fscl;
-    fscl.open(filename+".scl", ios::out);
+    fscl.open(filename + ".scl", ios::out);
     fscl << "UCLA scl 1.0" << endl
          << endl;
     fscl << "Numrows : " << BottomDieRows_repeat_count << endl
@@ -1196,31 +1218,49 @@ void NTUplace_BOT(string filename){
     }
 }
 
-void NTUplace_Get_TOP_Result(string filename){
-    string a_line;            // File read var. 
+void NTUplace_Get_TOP_Result(string filename)
+{
+    string a_line;            // File read var.
     vector<string> many_word; // File read var.
     vector<string> word;
     fstream TOP_Result_File;
-    TOP_Result_File.open(filename+".ntup.pl");
-    if(TOP_Result_File){
-        cout<<"File open!"<<endl;
+    TOP_Result_File.open(filename + ".ntup.pl");
+    if (TOP_Result_File)
+    {
+        cout << "File open!" << endl;
         getline(TOP_Result_File, a_line);
         getline(TOP_Result_File, a_line);
-        while (getline(TOP_Result_File, a_line)){
+        while (getline(TOP_Result_File, a_line))
+        {
             many_word = split(a_line, ' ');
-            if(many_word.size()==0){break;} // Read all instances
+            if (many_word.size() == 0)
+            {
+                break;
+            } // Read all instances
             word = split(many_word[0], '\t');
-            Inst[stoi(many_word[0])-1].locationX = stoi(word[1]); // Update LL_X in instances
-            Inst[stoi(many_word[0])-1].locationY = stoi(word[2]); // Update LL_Y in instances
+            Inst[stoi(many_word[0]) - 1].locationX = stoi(word[1]); // Update LL_X in instances
+            Inst[stoi(many_word[0]) - 1].locationY = stoi(word[2]); // Update LL_Y in instances
             // Rotate angle
-            if(many_word[2]=="N"){Inst[stoi(word[0])-1].rotate=0;}
-            else if(many_word[2]=="W"){Inst[stoi(word[0])-1].rotate=90;}
-            else if(many_word[2]=="S"){Inst[stoi(word[0])-1].rotate=180;}
-            else if(many_word[2]=="E"){Inst[stoi(word[0])-1].rotate=270;}
+            if (many_word[2] == "N")
+            {
+                Inst[stoi(word[0]) - 1].rotate = 0;
+            }
+            else if (many_word[2] == "W")
+            {
+                Inst[stoi(word[0]) - 1].rotate = 90;
+            }
+            else if (many_word[2] == "S")
+            {
+                Inst[stoi(word[0]) - 1].rotate = 180;
+            }
+            else if (many_word[2] == "E")
+            {
+                Inst[stoi(word[0]) - 1].rotate = 270;
+            }
         }
-        
     }
-    else {
-        cout<<"TOP_Result_File doesn't exist..."<<endl;
+    else
+    {
+        cout << "TOP_Result_File doesn't exist..." << endl;
     }
 }
