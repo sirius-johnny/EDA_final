@@ -13,20 +13,21 @@ using namespace std;
 
 // 讀入.txt的資料們
 string NumTechnologies;
-int num_LibCell;
-int DieSize_LL_X, DieSize_LL_Y, DieSize_UR_X, DieSize_UR_Y;
-int TopDieMaxUtil, BottomDieMaxUtil;
-int TopDieRows_X, TopDieRows_Y, TopDieRows_row_len, TopDieRows_row_height, TopDieRows_repeat_count;
-int BottomDieRows_X, BottomDieRows_Y, BottomDieRows_row_len, BottomDieRows_row_height, BottomDieRows_repeat_count;
+long long num_LibCell;
+long long DieSize_LL_X, DieSize_LL_Y, DieSize_UR_X, DieSize_UR_Y;
+long long TopDieMaxUtil, BottomDieMaxUtil;
+long long TopDieRows_X, TopDieRows_Y, TopDieRows_row_len, TopDieRows_row_height, TopDieRows_repeat_count;
+long long BottomDieRows_X, BottomDieRows_Y, BottomDieRows_row_len, BottomDieRows_row_height, BottomDieRows_repeat_count;
 string TopDieTech, BottomDieTech;
-int TerminalSize_X, TerminalSize_Y, TerminalSpacing, TerminalCost;
-int NumInstances, NumNets;
-int NumMacro = 0;
+long long TerminalSize_X, TerminalSize_Y, TerminalSpacing, TerminalCost;
+long long NumInstances, NumNets;
+long long NumMacro = 0;
+long long max_areaA, max_areaB, areaA, areaB;
 
 // partition
 vector<int> IA, IB; // vector of index of instructions (0 => C1), not sorted. IA for top / IB for bot.
-int max_size = 0;
-int max_pin = 0;
+long long max_size = 0;
+long long max_pin = 0;
 // 其他全域
 int *slot_arr; // a pseudo 3d array
 // Instance 面積總和
@@ -71,7 +72,8 @@ public:
     bool top;
     int *nets;
     int index;
-    int gain, temp_gain, sizeA, sizeB;
+    int gain, temp_gain;
+    long long sizeA, sizeB;
     Instance *next, *previous;
     bool locked, temp_top;
     int instindex;
@@ -240,10 +242,16 @@ void print_gain()
 }
 void initialize_gain()
 {
+    areaA = 0;
+    areaB = 0;
     // gain initialize
     for (int i = 0; i < NumInstances; i++)
     {
         Inst[i].gain = 0;
+        if (Inst[i].top)
+            areaA += Inst[i].sizeA;
+        else
+            areaB += Inst[i].sizeB;
     }
     for (int i = 0; i < NumNets; i++)
     {
@@ -671,15 +679,33 @@ int max_gain()
         {
             continue;
         }
-        if (bucketA[i].c)
+        Instance *currentA = bucketA[i].c;
+        Instance *currentB = bucketB[i].c;
+        while ((currentA) || (currentB))
         {
-            // cout << "A:" << i << endl;
-            return bucketA[i].c->instindex;
-        }
-        if (bucketB[i].c)
-        {
-            // cout << "B:" << i << endl;
-            return bucketB[i].c->instindex;
+            if (currentA)
+            {
+                // cout << "A:" << i << endl;
+                if (areaB + currentA->sizeB < max_areaB)
+                {
+                    areaB += currentA->sizeB;
+                    areaA -= currentA->sizeA;
+                    return bucketA[i].c->instindex;
+                }
+
+                currentA = currentA->next;
+            }
+            if (currentB)
+            {
+                // cout << "B:" << i << endl;
+                if (areaA + currentB->sizeA < max_areaA)
+                {
+                    areaA += currentB->sizeA;
+                    areaB -= currentB->sizeB;
+                    return bucketB[i].c->instindex;
+                }
+                currentB = currentB->next;
+            }
         }
     }
     return -1;
@@ -1045,7 +1071,7 @@ void Output_Format(string filename);
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case4.txt", ios::in);
+    fin.open("ProblemB_case2.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1147,6 +1173,9 @@ int main(int argc, char *argv[])
         words = split(lineStr, ' ');
         BottomDieMaxUtil = stoi(words[1]);
 
+        max_areaA = DieSize_UR_X * DieSize_UR_Y * TopDieMaxUtil / 100;
+        max_areaB = DieSize_UR_X * DieSize_UR_Y * BottomDieMaxUtil / 100;
+
         getline(fin, lineStr); // 27
 
         getline(fin, lineStr);
@@ -1242,8 +1271,9 @@ int main(int argc, char *argv[])
             }
         }
     }
-    // partition_init();
-    split_half();
+    partition_init();
+    print_set();
+    // split_half();
     num_terminal();
     while (1)
     {
@@ -1251,10 +1281,10 @@ int main(int argc, char *argv[])
         if (end)
             break;
     }
-
     num_terminal();
-    // print_set();
-
+    print_set();
+    cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
+    cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
     /*
         // -------------- NTUplace -------------- //
         Inst[7].change_top(1);
