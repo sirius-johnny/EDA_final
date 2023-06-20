@@ -240,7 +240,7 @@ void print_gain()
     }
     cout << endl;
 }
-void initialize_gain()
+void initialize_area()
 {
     areaA = 0;
     areaB = 0;
@@ -253,6 +253,12 @@ void initialize_gain()
         else
             areaB += Inst[i].sizeB;
     }
+}
+void initialize_gain()
+{
+    // area initialize
+    initialize_area();
+    // gain initialize
     for (int i = 0; i < NumNets; i++)
     {
         int NA = 0;
@@ -1071,7 +1077,7 @@ void Output_Format(string filename);
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case2.txt", ios::in);
+    fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1272,8 +1278,11 @@ int main(int argc, char *argv[])
         }
     }
     partition_init();
+    initialize_area();
+    cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
+    cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
     print_set();
-    // split_half();
+    //  split_half();
     num_terminal();
     while (1)
     {
@@ -1283,6 +1292,7 @@ int main(int argc, char *argv[])
     }
     num_terminal();
     print_set();
+    initialize_area();
     cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
     cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
     /*
