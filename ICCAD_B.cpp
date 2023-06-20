@@ -1056,9 +1056,10 @@ void place_terminal(const int &sizex, const int &sizey)
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
 void NTUplace_TOP(string filename);
 void NTUplace_BOT(string filename);
-void NTUplace_Get_TOP_Result(string filename);
+void NTUplace_Get_Placement_Result(string filename);
 void NTUplace_BOT_PinProjection(string filename);
-//////////////////////////////// NTUplace Associated Functions ////////////////////////////////
+//////////////////////////////// Write the Output File ////////////////////////////////
+void Output_Format(string filename);
 
 int main(int argc, char *argv[])
 {
@@ -1262,9 +1263,22 @@ int main(int argc, char *argv[])
     }
     // partition_init();
     split_half();
-    /*
-        initialize_gain();
-        print_gain();
+    initialize_gain();
+    cout << max_gain();
+    // print_set();
+    for (int i = 0; i < NumInstances; i++)
+    {
+        // update_gain(i);
+    }
+    for (int i = 0; i < max_pin; i++)
+    {
+        // cout << bucketA[i].c;
+    }
+    for (int i = 0; i < max_pin; i++)
+    {
+        // cout << bucketB[i].c;
+    }
+    /*   print_gain();
         cout << max_gain() << endl;
         update_gain(4);
         print_gain();
@@ -1309,8 +1323,6 @@ int main(int argc, char *argv[])
     // }
 
     // print_set();
-
-    Net_degree_counter();
     // print_gain();
     // cout << bucketA[1].c->next->instName;
     //  cout << Inst[5].previous->previous->previous->instName;
@@ -1330,17 +1342,29 @@ int main(int argc, char *argv[])
     // print_set();
 
     // -------------- NTUplace -------------- //
+    Inst[7].change_top(1);
 
+    Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
+    print_set();
     string Top_NTUplace_filename, Bot_NTUplace_filename;
     Top_NTUplace_filename = "TOP_PLACE";
     Bot_NTUplace_filename = "BOT_PLACE";
-    NTUplace_TOP(Top_NTUplace_filename);
+    // NTUplace_TOP(Top_NTUplace_filename);
     // NTUplace_BOT(Bot_NTUplace_filename);
-    NTUplace_Get_TOP_Result(Top_NTUplace_filename);
+    NTUplace_Get_Placement_Result(Top_NTUplace_filename);
+    // NTUplace_BOT_PinProjection(Bot_NTUplace_filename+"_PROJECTION");
+    NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
 
     for (int i = 0; i < IA.size(); i++)
     {
-        cout << Inst[IA[i]].instName << ", left low (x,y) = (" << Inst[IA[i]].locationX << "," << Inst[IA[i]].locationY << ")" << endl;
+        cout << Inst[IA[i]].instName << ", left low (x,y) = (" << Inst[IA[i]].locationX << "," << Inst[IA[i]].locationY << ")"
+             << " ,Rotate R" << Inst[IA[i]].rotate << endl;
+    }
+
+    for (int i = 0; i < IB.size(); i++)
+    {
+        cout << Inst[IB[i]].instName << ", left low (x,y) = (" << Inst[IB[i]].locationX << "," << Inst[IB[i]].locationY << ")"
+             << " ,Rotate R" << Inst[IB[i]].rotate << endl;
     }
 
     /// 以下是 for terminal placing 的，結果會存在terminal.center_x跟terminal.center_y裡 ///
@@ -1352,9 +1376,13 @@ int main(int argc, char *argv[])
     for (auto terminal : Terminals)
     {
         terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
+        cout << "terminal.center_x = " << terminal.center_x << endl;
         terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
+        cout << "terminal.center_y = " << terminal.center_y << endl;
     }
     /// terminal end ///
+
+    Output_Format("case1");
 }
 
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
@@ -1568,7 +1596,7 @@ void NTUplace_BOT(string filename)
     }
 }
 
-void NTUplace_Get_TOP_Result(string filename)
+void NTUplace_Get_Placement_Result(string filename)
 {
     string a_line;            // File read var.
     vector<string> many_word; // File read var.
@@ -1587,31 +1615,39 @@ void NTUplace_Get_TOP_Result(string filename)
             {
                 break;
             } // Read all instances
-            word = split(many_word[0], '\t');
-            Inst[stoi(many_word[0]) - 1].locationX = stoi(word[1]); // Update LL_X in instances
-            Inst[stoi(many_word[0]) - 1].locationY = stoi(word[2]); // Update LL_Y in instances
-            // Rotate angle
-            if (many_word[2] == "N")
+            if (many_word[many_word.size() - 1] != "/FIXED")
             {
-                Inst[stoi(word[0]) - 1].rotate = 0;
+                word = split(many_word[0], '\t');
+                word[0] = word[0].erase(0, 1);
+                Inst[stoi(word[0]) - 1].locationX = stoi(word[1]); // Update LL_X in instances
+                Inst[stoi(word[0]) - 1].locationY = stoi(word[2]); // Update LL_Y in instances
+                // Rotate angle
+                if (many_word[2] == "N")
+                {
+                    Inst[stoi(word[0]) - 1].rotate = 0;
+                }
+                else if (many_word[2] == "W")
+                {
+                    Inst[stoi(word[0]) - 1].rotate = 90;
+                }
+                else if (many_word[2] == "S")
+                {
+                    Inst[stoi(word[0]) - 1].rotate = 180;
+                }
+                else if (many_word[2] == "E")
+                {
+                    Inst[stoi(word[0]) - 1].rotate = 270;
+                }
             }
-            else if (many_word[2] == "W")
+            else
             {
-                Inst[stoi(word[0]) - 1].rotate = 90;
-            }
-            else if (many_word[2] == "S")
-            {
-                Inst[stoi(word[0]) - 1].rotate = 180;
-            }
-            else if (many_word[2] == "E")
-            {
-                Inst[stoi(word[0]) - 1].rotate = 270;
+                continue;
             }
         }
     }
     else
     {
-        cout << "TOP_Result_File doesn't exist..." << endl;
+        cout << filename + ".ntup.pl doesn't exist..." << endl;
     }
 }
 
@@ -1627,7 +1663,7 @@ void NTUplace_BOT_PinProjection(string filename)
     fnodes.open(filename + ".nodes", ios::out);
     fnodes << "UCLA nodes 1.0" << endl
            << endl;
-    fnodes << "NumNodes : " << IB.size() << endl;
+    fnodes << "NumNodes : " << IA.size() + IB.size() << endl;
     fnodes << "NumTerminals : " << IA.size() << endl; // 上層的Inst全部投影下來當參考
                                                       // Terminal還沒存進去喔
     for (int i = 0; i < IA.size(); i++)
@@ -1728,4 +1764,28 @@ void NTUplace_BOT_PinProjection(string filename)
              << "SubrowOrigin :\t" << 0 << " Numsites :\t" << DieSize_UR_X << endl;
         fscl << "End" << endl;
     }
+}
+
+void Output_Format(string filename)
+{
+    fstream fout;
+    fout.open(filename + "_result.txt", ios::out);
+    fout << "TopDiePlacement " << IA.size() << endl;
+    for (int i = 0; i < IA.size(); i++)
+    {
+        fout << "Inst " << Inst[IA[i]].instName << " " << Inst[IA[i]].locationX << " " << Inst[IA[i]].locationY << " "
+             << "R" << Inst[IA[i]].rotate << endl;
+    }
+    fout << "BottomDiePlacement " << IB.size() << endl;
+    for (int i = 0; i < IB.size(); i++)
+    {
+        fout << "Inst " << Inst[IB[i]].instName << " " << Inst[IB[i]].locationX << " " << Inst[IB[i]].locationY << " "
+             << "R" << Inst[IB[i]].rotate << endl;
+    }
+    fout << "NumTerminals " << Terminals.size() << endl;
+    for (int i = 0; i < Terminals.size(); i++)
+    {
+        fout << "Terminal " << Terminals[i].netName << " " << Terminals[i].center_x << " " << Terminals[i].center_y << endl;
+    }
+    fout.close();
 }
