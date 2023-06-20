@@ -31,8 +31,8 @@ long long max_pin = 0;
 // 其他全域
 int *slot_arr; // a pseudo 3d array
 // Instance 面積總和
-long bot_occupied = 0;
-long top_occupied = 0;
+long long bot_occupied = 0;
+long long top_occupied = 0;
 
 typedef struct
 {
@@ -515,6 +515,22 @@ void update_gain(int index)
                     }
                 }
             }
+            if ((NA > 2) && (NB == 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (!Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
+                    }
+                }
+            }
             if ((NA == 2) && (NB > 1))
             {
                 for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
@@ -620,6 +636,22 @@ void update_gain(int index)
                     }
                 }
             }
+            if ((NB > 2) && (NA == 1))
+            {
+                for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
+                {
+                    if (index == Nets[Inst[index].nets[i]].Ins_Pin[j][0])
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].locked)
+                        continue;
+                    if (Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_top)
+                    {
+                        int temp_gain = Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain;
+                        Inst[Nets[Inst[index].nets[i]].Ins_Pin[j][0]].temp_gain -= 1;
+                        move_cell(Nets[Inst[index].nets[i]].Ins_Pin[j][0], temp_gain);
+                    }
+                }
+            }
             if ((NB == 2) && (NA > 1))
             {
                 for (int j = 0; j < Nets[Inst[index].nets[i]].Pin_num; j++)
@@ -696,7 +728,7 @@ int max_gain()
                 {
                     areaB += currentA->sizeB;
                     areaA -= currentA->sizeA;
-                    return bucketA[i].c->instindex;
+                    return currentA->instindex;
                 }
 
                 currentA = currentA->next;
@@ -708,7 +740,7 @@ int max_gain()
                 {
                     areaA += currentB->sizeA;
                     areaB -= currentB->sizeB;
-                    return bucketB[i].c->instindex;
+                    return currentB->instindex;
                 }
                 currentB = currentB->next;
             }
@@ -1077,7 +1109,7 @@ void Output_Format(string filename);
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case1.txt", ios::in);
+    fin.open("ProblemB_case2.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1277,12 +1309,15 @@ int main(int argc, char *argv[])
             }
         }
     }
+
+    // split_half();
     partition_init();
+
     initialize_area();
     cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
     cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-    print_set();
-    //  split_half();
+    // print_set();
+
     num_terminal();
     while (1)
     {
@@ -1291,10 +1326,12 @@ int main(int argc, char *argv[])
             break;
     }
     num_terminal();
-    print_set();
+    // print_set();
+
     initialize_area();
     cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
     cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
+
     /*
         // -------------- NTUplace -------------- //
         Inst[7].change_top(1);
