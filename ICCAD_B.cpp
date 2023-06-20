@@ -61,7 +61,7 @@ typedef struct
 {
     int index, gain;
 } Gain;
-vector<Gain> G;
+
 class Instance
 {
 public:
@@ -343,7 +343,7 @@ void initialize_gain()
             }
         }
     }
-    cout << "initialized" << endl;
+    // cout << "initialized" << endl;
     return;
 }
 void del_cell(int index, int gain)
@@ -381,8 +381,10 @@ void del_cell(int index, int gain)
             Inst[index].previous->next = Inst[index].next;
             Inst[index].next->previous = Inst[index].previous;
         }
-        Inst[index].previous = nullptr;
     }
+    // 保險起見
+    Inst[index].next = nullptr;
+    Inst[index].previous = nullptr;
 }
 void move_cell(int index, int temp_gain)
 {
@@ -394,6 +396,7 @@ void move_cell(int index, int temp_gain)
         {
             bucketA[max_pin - Inst[index].temp_gain].c = &Inst[index];
             Inst[index].next = nullptr;
+            Inst[index].previous = nullptr;
         }
 
         else
@@ -409,6 +412,7 @@ void move_cell(int index, int temp_gain)
         {
             bucketB[max_pin - Inst[index].temp_gain].c = &Inst[index];
             Inst[index].next = nullptr;
+            Inst[index].previous = nullptr;
         }
         else
         {
@@ -664,29 +668,18 @@ int max_gain()
     {
         // cout << "i:" << i << endl;
         if ((!bucketA[i].c) && (!bucketB[i].c))
-            continue;
-        Instance *currentA = bucketA[i].c;
-        Instance *currentB = bucketB[i].c;
-        while ((currentA) || (currentB))
         {
-            if (currentA)
-            {
-                if (1)
-                {
-                    // cout << currentA->instName;
-                    return currentA->instindex;
-                }
-                currentA = currentA->next;
-            }
-            if (currentB)
-            {
-                if (1)
-                {
-                    // cout << currentB->instName;
-                    return currentB->instindex;
-                }
-                currentB = currentB->next;
-            }
+            continue;
+        }
+        if (bucketA[i].c)
+        {
+            // cout << "A:" << i << endl;
+            return bucketA[i].c->instindex;
+        }
+        if (bucketB[i].c)
+        {
+            // cout << "B:" << i << endl;
+            return bucketB[i].c->instindex;
         }
     }
     return -1;
@@ -695,16 +688,16 @@ bool F_M()
 {
     cout << "enter" << endl;
     initialize_gain();
-    cout << "initialize_gain" << endl;
-    // print_gain();
+    // cout << "initialize_gain" << endl;
+    //  print_gain();
+    vector<Gain> G;
     G.clear();
-    cout << "Gain" << endl;
+    // cout << "Gain" << endl;
 
     while (1)
     {
-
         int index = max_gain();
-
+        // cout << index << " " << endl;
         if (index < 0)
             break;
         update_gain(index);
@@ -713,17 +706,7 @@ bool F_M()
         gain.gain = Inst[index].temp_gain;
         G.push_back(gain);
     }
-    cout << "while" << endl;
-    /*
-    for (int i = 0; i < G.size(); i++)
-    {
-        cout << G[i].index << " ";
-    }
-    cout << endl;
-    for (int i = 0; i < G.size(); i++)
-    {
-        cout << G[i].gain << " ";
-    }
+    // cout << "while" << endl;
 
     int max = 0;
     int sum = 0;
@@ -745,8 +728,6 @@ bool F_M()
         Inst[G[i].index].change_top(!Inst[G[i].index].top);
     }
     return 0;
-    */
-    return 1;
 }
 int num_terminal()
 {
@@ -1064,7 +1045,7 @@ void Output_Format(string filename);
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case1.txt", ios::in);
+    fin.open("ProblemB_case4.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1263,126 +1244,61 @@ int main(int argc, char *argv[])
     }
     // partition_init();
     split_half();
-    initialize_gain();
-    cout << max_gain();
-    // print_set();
-    for (int i = 0; i < NumInstances; i++)
+    num_terminal();
+    while (1)
     {
-        // update_gain(i);
+        bool end = F_M();
+        if (end)
+            break;
     }
-    for (int i = 0; i < max_pin; i++)
-    {
-        // cout << bucketA[i].c;
-    }
-    for (int i = 0; i < max_pin; i++)
-    {
-        // cout << bucketB[i].c;
-    }
-    /*   print_gain();
-        cout << max_gain() << endl;
-        update_gain(4);
-        print_gain();
-        cout << max_gain() << endl;
-        update_gain(0);
-        print_gain();
-        cout << max_gain() << endl;
-        update_gain(2);
-        print_gain();
-        cout << max_gain() << endl;
-        update_gain(6);
-        print_gain();
-        cout << max_gain() << endl;
-        update_gain(7);
-        print_gain();
-        cout << max_gain() << endl;
-        update_gain(1);
-        print_gain();
-        cout << max_gain() << endl;
-        update_gain(5);
-        print_gain();
-        cout << max_gain() << endl;
-        update_gain(3);
-        print_gain();
-        cout << max_gain() << endl;
-    */
 
     num_terminal();
-    // initialize_gain();
-    // cout << max_gain();
-    F_M();
-    // F_M();
-    // print_set();
-    //  initialize_gain();
-    //  print_gain();
-
-    // while (1)
-    // {
-    //     bool end = F_M();
-    //     if (end)
-    //         break;
-    // }
-
-    // print_set();
-    // print_gain();
-    // cout << bucketA[1].c->next->instName;
-    //  cout << Inst[5].previous->previous->previous->instName;
-    //    num_terminal();
-    // for (int i = 0; i < NumInstances; i++)
-    // {
-    //     // cout << bucketA[i].c << endl;
-    // }
-    // for (int i = 0; i < 7; i++)
-    // {
-    //     cout << bucketB[i].c << endl;
-    // }
-    // cout << bucketB[2].c->instName << bucketB[2].c->next->instName << bucketB[2].c->previous->instName;
-
     // print_set();
 
-    // print_set();
+    /*
+        // -------------- NTUplace -------------- //
+        Inst[7].change_top(1);
 
-    // -------------- NTUplace -------------- //
-    Inst[7].change_top(1);
+        Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
+        // print_set();
+        string Top_NTUplace_filename, Bot_NTUplace_filename;
+        Top_NTUplace_filename = "TOP_PLACE";
+        Bot_NTUplace_filename = "BOT_PLACE";
+        // NTUplace_TOP(Top_NTUplace_filename);
+        // NTUplace_BOT(Bot_NTUplace_filename);
+        NTUplace_Get_Placement_Result(Top_NTUplace_filename);
+        // NTUplace_BOT_PinProjection(Bot_NTUplace_filename+"_PROJECTION");
+        NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
 
-    Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
-    print_set();
-    string Top_NTUplace_filename, Bot_NTUplace_filename;
-    Top_NTUplace_filename = "TOP_PLACE";
-    Bot_NTUplace_filename = "BOT_PLACE";
-    // NTUplace_TOP(Top_NTUplace_filename);
-    // NTUplace_BOT(Bot_NTUplace_filename);
-    NTUplace_Get_Placement_Result(Top_NTUplace_filename);
-    // NTUplace_BOT_PinProjection(Bot_NTUplace_filename+"_PROJECTION");
-    NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
+        for (int i = 0; i < IA.size(); i++)
+        {
+            cout << Inst[IA[i]].instName << ", left low (x,y) = (" << Inst[IA[i]].locationX << "," << Inst[IA[i]].locationY << ")"
+                 << " ,Rotate R" << Inst[IA[i]].rotate << endl;
+        }
 
-    for (int i = 0; i < IA.size(); i++)
-    {
-        cout << Inst[IA[i]].instName << ", left low (x,y) = (" << Inst[IA[i]].locationX << "," << Inst[IA[i]].locationY << ")"
-             << " ,Rotate R" << Inst[IA[i]].rotate << endl;
-    }
+        for (int i = 0; i < IB.size(); i++)
+        {
+            cout << Inst[IB[i]].instName << ", left low (x,y) = (" << Inst[IB[i]].locationX << "," << Inst[IB[i]].locationY << ")"
+                 << " ,Rotate R" << Inst[IB[i]].rotate << endl;
+        }
 
-    for (int i = 0; i < IB.size(); i++)
-    {
-        cout << Inst[IB[i]].instName << ", left low (x,y) = (" << Inst[IB[i]].locationX << "," << Inst[IB[i]].locationY << ")"
-             << " ,Rotate R" << Inst[IB[i]].rotate << endl;
-    }
+        /// 以下是 for terminal placing 的，結果會存在terminal.center_x跟terminal.center_y裡 ///
+        /// 輸出格式為 terminal.netName terminal.center_x terminal.center_y ///
+        // net_edges_init();
+        int sizex = 0, sizey = 0;
+        // slot_init(sizex, sizey);
+        // place_terminal(sizex, sizey);
+        for (auto terminal : Terminals)
+        {
+            terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
+            cout << "terminal.center_x = " << terminal.center_x << endl;
+            terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
+            cout << "terminal.center_y = " << terminal.center_y << endl;
+        }
+        /// terminal end ///
 
-    /// 以下是 for terminal placing 的，結果會存在terminal.center_x跟terminal.center_y裡 ///
-    /// 輸出格式為 terminal.netName terminal.center_x terminal.center_y ///
-    // net_edges_init();
-    int sizex = 0, sizey = 0;
-    // slot_init(sizex, sizey);
-    // place_terminal(sizex, sizey);
-    for (auto terminal : Terminals)
-    {
-        terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
-        cout << "terminal.center_x = " << terminal.center_x << endl;
-        terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
-        cout << "terminal.center_y = " << terminal.center_y << endl;
-    }
-    /// terminal end ///
-
-    Output_Format("case1");
+        Output_Format("case1");
+    */
 }
 
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
