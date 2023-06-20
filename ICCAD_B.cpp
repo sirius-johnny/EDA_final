@@ -57,6 +57,11 @@ struct LibCell
     Pin *pin;
 };
 LibCell *TA, *TB;
+typedef struct
+{
+    int index, gain;
+} Gain;
+vector<Gain> G;
 class Instance
 {
 public:
@@ -69,6 +74,7 @@ public:
     int gain, temp_gain, sizeA, sizeB;
     Instance *next, *previous;
     bool locked, temp_top;
+    int instindex;
     Instance(string instName, string libCellName)
     {
         this->instName = instName;
@@ -93,6 +99,7 @@ public:
         previous = nullptr;
         locked = 0;
         temp_top = 0;
+        instindex = 0;
     }
     void input_nets(int pin, int net)
     {
@@ -100,8 +107,7 @@ public:
     }
     void change_top(bool top) // update top, temptop, IA/IB, libCell of Instance
     {
-        int instindex = stoi(this->instName.erase(0, 1)) - 1;
-        this->instName = "C" + this->instName;
+        int instindex = this->instindex;
         this->top = top;
         this->temp_top = top;
         if (top)
@@ -234,8 +240,11 @@ void print_gain()
 }
 void initialize_gain()
 {
-
     // gain initialize
+    for (int i = 0; i < NumInstances; i++)
+    {
+        Inst[i].gain = 0;
+    }
     for (int i = 0; i < NumNets; i++)
     {
         int NA = 0;
@@ -334,7 +343,7 @@ void initialize_gain()
             }
         }
     }
-
+    cout << "initialized" << endl;
     return;
 }
 void del_cell(int index, int gain)
@@ -651,9 +660,9 @@ void update_gain(int index)
 }
 int max_gain()
 {
-    for (int i = 0; i < max_pin; i++)
+    for (int i = 0; i < 2 * max_pin + 1; i++)
     {
-        cout << "i:" << i << endl;
+        // cout << "i:" << i << endl;
         if ((!bucketA[i].c) && (!bucketB[i].c))
             continue;
         Instance *currentA = bucketA[i].c;
@@ -664,10 +673,8 @@ int max_gain()
             {
                 if (1)
                 {
-                    cout << currentA->instName;
-                    int index = stoi(currentA->instName.erase(0, 1)) - 1;
-                    currentA->instName = "C" + currentA->instName;
-                    return index;
+                    // cout << currentA->instName;
+                    return currentA->instindex;
                 }
                 currentA = currentA->next;
             }
@@ -675,16 +682,71 @@ int max_gain()
             {
                 if (1)
                 {
-                    cout << currentB->instName;
-                    int index = stoi(currentB->instName.erase(0, 1)) - 1;
-                    currentB->instName = "C" + currentB->instName;
-                    return index;
+                    // cout << currentB->instName;
+                    return currentB->instindex;
                 }
                 currentB = currentB->next;
             }
         }
     }
     return -1;
+}
+bool F_M()
+{
+    cout << "enter" << endl;
+    initialize_gain();
+    cout << "initialize_gain" << endl;
+    // print_gain();
+    G.clear();
+    cout << "Gain" << endl;
+
+    while (1)
+    {
+
+        int index = max_gain();
+
+        if (index < 0)
+            break;
+        update_gain(index);
+        Gain gain;
+        gain.index = index;
+        gain.gain = Inst[index].temp_gain;
+        G.push_back(gain);
+    }
+    cout << "while" << endl;
+    /*
+    for (int i = 0; i < G.size(); i++)
+    {
+        cout << G[i].index << " ";
+    }
+    cout << endl;
+    for (int i = 0; i < G.size(); i++)
+    {
+        cout << G[i].gain << " ";
+    }
+
+    int max = 0;
+    int sum = 0;
+    int G_index = -1;
+    for (int i = 0; i < G.size(); i++)
+    {
+        sum += G[i].gain;
+        if (sum > max)
+        {
+            max = sum;
+            G_index = i;
+        }
+    }
+    // cout << endl         << G_index << " " << max << endl;
+    if (G_index < 0)
+        return 1;
+    for (int i = 0; i <= G_index; i++)
+    {
+        Inst[G[i].index].change_top(!Inst[G[i].index].top);
+    }
+    return 0;
+    */
+    return 1;
 }
 int num_terminal()
 {
@@ -1158,6 +1220,7 @@ int main(int argc, char *argv[])
             getline(fin, lineStr);
             words = split(lineStr, ' ');
             Instance inst(words[1], words[2]);
+            inst.instindex = i;
             Inst.push_back(inst);
             if (inst.libCell.is_Macro)
             {
@@ -1199,22 +1262,54 @@ int main(int argc, char *argv[])
     }
     // partition_init();
     split_half();
-    initialize_gain();
-    cout << max_gain();
+    /*
+        initialize_gain();
+        print_gain();
+        cout << max_gain() << endl;
+        update_gain(4);
+        print_gain();
+        cout << max_gain() << endl;
+        update_gain(0);
+        print_gain();
+        cout << max_gain() << endl;
+        update_gain(2);
+        print_gain();
+        cout << max_gain() << endl;
+        update_gain(6);
+        print_gain();
+        cout << max_gain() << endl;
+        update_gain(7);
+        print_gain();
+        cout << max_gain() << endl;
+        update_gain(1);
+        print_gain();
+        cout << max_gain() << endl;
+        update_gain(5);
+        print_gain();
+        cout << max_gain() << endl;
+        update_gain(3);
+        print_gain();
+        cout << max_gain() << endl;
+    */
+
+    num_terminal();
+    // initialize_gain();
+    // cout << max_gain();
+    F_M();
+    // F_M();
     // print_set();
-    for (int i = 0; i < NumInstances; i++)
-    {
-        // update_gain(i);
-    }
-    for (int i = 0; i < max_pin; i++)
-    {
-        // cout << bucketA[i].c;
-    }
-    for (int i = 0; i < max_pin; i++)
-    {
-        // cout << bucketB[i].c;
-    }
-    print_gain();
+    //  initialize_gain();
+    //  print_gain();
+
+    // while (1)
+    // {
+    //     bool end = F_M();
+    //     if (end)
+    //         break;
+    // }
+
+    // print_set();
+
     Net_degree_counter();
     // print_gain();
     // cout << bucketA[1].c->next->instName;
@@ -1230,7 +1325,7 @@ int main(int argc, char *argv[])
     // }
     // cout << bucketB[2].c->instName << bucketB[2].c->next->instName << bucketB[2].c->previous->instName;
 
-    print_set();
+    // print_set();
 
     // print_set();
 
@@ -1250,10 +1345,10 @@ int main(int argc, char *argv[])
 
     /// 以下是 for terminal placing 的，結果會存在terminal.center_x跟terminal.center_y裡 ///
     /// 輸出格式為 terminal.netName terminal.center_x terminal.center_y ///
-    net_edges_init();
+    // net_edges_init();
     int sizex = 0, sizey = 0;
-    slot_init(sizex, sizey);
-    place_terminal(sizex, sizey);
+    // slot_init(sizex, sizey);
+    // place_terminal(sizex, sizey);
     for (auto terminal : Terminals)
     {
         terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
