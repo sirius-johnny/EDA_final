@@ -1181,13 +1181,14 @@ void NTUplace_TOP(string filename);
 void NTUplace_BOT(string filename);
 void NTUplace_Get_Placement_Result(string filename, bool top_or_not);
 void NTUplace_BOT_PinProjection(string filename);
+void NTUplace_BOT_PinProjection_SINGLE(string filename);
 //////////////////////////////// Write the Output File ////////////////////////////////
 void Output_Format(string filename);
 
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case1.txt", ios::in);
+    fin.open("ProblemB_case2.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1392,19 +1393,21 @@ int main(int argc, char *argv[])
     // [terminal]  2. 讀進.ntup.pl檔們，並擺放terminals，生出output_result.txt
     string mode;
     cout << "MODE[partition]: Do partition, and generate NTUplace files." << endl;
+    cout << "MODE[pinprojection]: Do pin projecting, and generate BOTTOM NTUplace files."<<endl;
     cout << "MODE[terminal]: Do terminal placing, and generate output.txt." << endl;
     cout << "Enter MODE for ICCAD_B.cpp: ";
     cin >> mode;
 
     // NTUplace 檔案相關
     string Top_NTUplace_filename, Bot_NTUplace_filename;
-    Top_NTUplace_filename = "TOP_PLACE_case2";
-    Bot_NTUplace_filename = "BOT_PLACE_case2";
+    Top_NTUplace_filename = "TOP_PLACE_case2_withpinpro_MRT";
+    Bot_NTUplace_filename = "BOT_PLACE_case2_withpinpro_single_MRT";
 
     if (mode == "partition")
     {
         split_half();
         partition_init();
+        // ratio_split();
 
         initialize_area();
         cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
@@ -1429,11 +1432,19 @@ int main(int argc, char *argv[])
         NTUplace_BOT(Bot_NTUplace_filename);
     }
 
+    else if(mode=="pinprojection"){
+        print_set();
+        NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
+        update_set();
+        Net_degree_counter();
+        NTUplace_BOT_PinProjection_SINGLE(Bot_NTUplace_filename);
+    }
+
     else if (mode == "terminal")
     {
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
-        // NTUplace_BOT_PinProjection(Bot_NTUplace_filename+"_PROJECTION");
+        update_set();
         // NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
         net_edges_init();
@@ -1448,7 +1459,7 @@ int main(int argc, char *argv[])
             // cout << "terminal.center_y = " << terminal.center_y << endl;
         }
         /// terminal end ///
-        Output_Format("case2");
+        Output_Format("case2_withpinprojection_single_MRT");
     }
 }
 
@@ -1686,23 +1697,23 @@ void NTUplace_Get_Placement_Result(string filename, bool top_or_not)
             {
                 word = split(many_word[0], '\t');
                 word[0] = word[0].erase(0, 1);
-                Inst[stoi(word[0]) - 1].change_top(top_or_not);
+                Inst[stoi(word[0]) - 1].top = top_or_not;
                 Inst[stoi(word[0]) - 1].locationX = stoi(word[1]); // Update LL_X in instances
                 Inst[stoi(word[0]) - 1].locationY = stoi(word[2]); // Update LL_Y in instances
                 // Rotate angle
-                if (many_word[2] == "N")
+                if (many_word[2] == "N" || many_word[2] == "FN")
                 {
                     Inst[stoi(word[0]) - 1].rotate = 0;
                 }
-                else if (many_word[2] == "W")
+                else if (many_word[2] == "W" || many_word[2] == "FW")
                 {
                     Inst[stoi(word[0]) - 1].rotate = 90;
                 }
-                else if (many_word[2] == "S")
+                else if (many_word[2] == "S" || many_word[2] == "FS")
                 {
                     Inst[stoi(word[0]) - 1].rotate = 180;
                 }
-                else if (many_word[2] == "E")
+                else if (many_word[2] == "E" || many_word[2] == "FE")
                 {
                     Inst[stoi(word[0]) - 1].rotate = 270;
                 }
@@ -1791,6 +1802,134 @@ void NTUplace_BOT_PinProjection(string filename)
         fpl << Inst[IA[i]].instName << "\t" << Inst[IA[i]].locationX + Inst[IA[i]].libCell.size_X / 2 << "\t" << Inst[IA[i]].locationY + Inst[IA[i]].libCell.size_Y / 2 << " : "
             << "/FIXED" << endl;
     }
+    for (int i = 0; i < IB.size(); i++)
+    {
+        if (!Inst[IB[i]].libCell.is_Macro)
+        {
+            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+                << "N" << endl;
+        }
+        else
+        {
+            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+                << "E" << endl;
+        }
+    }
+
+    //.scl
+    fstream fscl;
+    fscl.open(filename + ".scl", ios::out);
+    fscl << "UCLA scl 1.0" << endl
+         << endl;
+    fscl << "Numrows : " << BottomDieRows_repeat_count << endl
+         << endl;
+    for (int i = 0; i < BottomDieRows_repeat_count; i++)
+    {
+        fscl << "CoreRow Horizontal" << endl;
+        fscl << "\t"
+             << "Coordinate :\t" << i * BottomDieRows_row_height << endl;
+        fscl << "\t"
+             << "Height :\t" << BottomDieRows_row_height << endl;
+        fscl << "\t"
+             << "Sitewidth :\t" << 1 << endl;
+        fscl << "\t"
+             << "Sitespacing :\t" << 1 << endl;
+        fscl << "\t"
+             << "Siteorient :\t" << 1 << endl;
+        fscl << "\t"
+             << "Sitesymmetry :\t"
+             << "Y" << endl;
+        fscl << "\t"
+             << "SubrowOrigin :\t" << 0 << " Numsites :\t" << DieSize_UR_X << endl;
+        fscl << "End" << endl;
+    }
+}
+
+void NTUplace_BOT_PinProjection_SINGLE(string filename)
+{
+    // .aux
+    fstream faux;
+    faux.open(filename + ".aux", ios::out);
+    faux << "RowBasedPlacement : " << filename << ".nodes " << filename << ".nets " << filename << ".wts " << filename << ".pl " << filename << ".scl";
+    faux.close();
+    //.nodes
+    fstream fnodes;
+    fnodes.open(filename + ".nodes", ios::out);
+    fnodes << "UCLA nodes 1.0" << endl
+           << endl;
+    fnodes << "NumNodes : " << 1 + IB.size() << endl;
+    fnodes << "NumTerminals : " << 1 << endl; // 上層的Inst全部投影下來當參考
+
+    fnodes << "\t" << "CC"<< "\t" << 0 << "\t" << 0 << "\tterminal" << endl;
+    for (int i = 0; i < IB.size(); i++)
+    {
+        fnodes << "\t" << Inst[IB[i]].instName << "\t" << Inst[IB[i]].libCell.size_X << "\t" << Inst[IB[i]].libCell.size_Y << endl;
+    }
+    //.nets
+    fstream fnets;
+    fnets.open(filename + ".nets", ios::out);
+    fnets << "UCLA nets 1.0" << endl
+          << endl;
+    fnets << "NumNets : " << NumNets << endl;
+
+    int total_pin = 0;
+    for(int i=0; i<NumNets; i++){
+        if(Nets[i].Top_degree==0) total_pin += Nets[i].Bot_degree;
+        else total_pin += 1+Nets[i].Bot_degree;
+    }
+    fnets << "NumPins : " << total_pin << endl;
+
+    double pin_x_offset = 0;
+    double pin_y_offset = 0;
+    double x_sum = 0;
+    double y_sum = 0;
+    for (int i = 0; i < NumNets; i++)
+    {
+        if(Nets[i].Top_degree==0){
+            fnets << "NetDegree : " << Nets[i].Bot_degree << "\t" << "N" << i + 1 << endl;
+        }
+        else fnets << "NetDegree : " << 1 + Nets[i].Bot_degree << "\t" << "N" << i + 1 << endl;
+        
+        if(Nets[i].Top_degree!=0){
+            x_sum = 0;
+            y_sum = 0;
+            for(int k=0; k<Nets[i].Top_degree; k++){
+                x_sum += Inst[Nets[i].Ins_Pin[k][0]].libCell.pin[Nets[i].Ins_Pin[k][1]].pinLocationX + Inst[Nets[i].Ins_Pin[k][0]].locationX;
+                y_sum += Inst[Nets[i].Ins_Pin[k][0]].libCell.pin[Nets[i].Ins_Pin[k][1]].pinLocationY + Inst[Nets[i].Ins_Pin[k][0]].locationY;
+            }
+            x_sum = x_sum / Nets[i].Top_degree;
+            y_sum = y_sum / Nets[i].Top_degree;
+            x_sum -= DieSize_UR_X / 2;
+            y_sum -= DieSize_UR_Y / 2;
+            fnets << "\t" << "CC" << " I : " << x_sum << " " << y_sum << endl;
+        }
+ 
+        for (int j = 0; j < Nets[i].Pin_num; j++)
+        {
+            if(!Inst[Nets[i].Ins_Pin[j][0]].top){
+                pin_x_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationX - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_X / 2;
+                pin_y_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationY - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_Y / 2;
+                fnets << "\t" << Inst[Nets[i].Ins_Pin[j][0]].instName << " I : " << pin_x_offset << " " << pin_y_offset << endl;
+            }
+        }
+    }
+    //.wts
+    fstream fwts;
+    fwts.open(filename + ".wts", ios::out);
+    fwts << "UCLA wts 1.0" << endl
+         << endl;
+    fwts << "\t" << "CC" << "\t" << 0 << endl;
+    for (int i = 0; i < IB.size(); i++)
+    {
+        fwts << "\t" << Inst[IB[i]].instName << "\t" << 0 << endl;
+    }
+    //.pl
+    fstream fpl;
+    fpl.open(filename + ".pl", ios::out);
+    fpl << "UCLA pl 1.0" << endl
+        << endl;
+    fpl << "CC" << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+            << "/FIXED" << endl;
     for (int i = 0; i < IB.size(); i++)
     {
         if (!Inst[IB[i]].libCell.is_Macro)
