@@ -9,6 +9,7 @@
 #include <set>
 #include <math.h>
 #include <ctime>
+#include <cmath>
 using namespace std;
 
 // 讀入.txt的資料們
@@ -176,6 +177,7 @@ void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDie
     int index = 0;
     while (macroSplit > 0)
     {
+        // cout<<"there"<<endl;
         if (Inst[Inst.size() - 1 - index].libCell.is_Macro)
         {
             Inst[Inst.size() - 1 - index].change_top(1);
@@ -186,8 +188,9 @@ void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDie
         index++;
     }
     index = 0;
-    while ((bot_occupied - top_occupied) > 0)
+    while ((bot_occupied - top_occupied) > 0 && index < NumInstances)
     {
+        // cout<<index<<endl;
         if (!Inst[index].libCell.is_Macro)
         {
             Inst[index].change_top(1);
@@ -902,17 +905,21 @@ void net_edges_init()
         int pin_x, pin_y;
         if (Nets[i].Top_degree * Nets[i].Bot_degree > 0)
         {
-            Terminal term{"N" + to_string(i + 1), i, 0, 0, {0, 0, 0, 0}};
+            Terminal term{"N" + to_string(i + 1), i + 1, 0, 0, {0, 0, 0, 0}};
             for (int j = 0; j < Nets[i].Pin_num; j++)
             {
                 string inst_name = "C" + to_string(Nets[i].Ins_Pin[j][0] + 1); // index of instance 0=>C1
                 string pin_name = "P" + to_string(Nets[i].Ins_Pin[j][1] + 1);  // index of instance 0=>C1
                 auto it = find_if(Inst.begin(), Inst.end(), [inst_name](Instance obj)
                                   { return obj.instName == inst_name; });
+                if (it == Inst.end())
+                {
+                    cout << "net_edges_init error" << endl;
+                }
                 LibCell libcell = it->libCell;
                 auto it2 = find_if(libcell.pin, libcell.pin + libcell.Pin_count, [pin_name](Pin pin)
                                    { return pin.pinName == pin_name; });
-                if ((it == Inst.end()) || (it2 == libcell.pin + libcell.Pin_count))
+                if (it2 == libcell.pin + libcell.Pin_count)
                 {
                     cout << "net_edges_init error" << endl;
                 }
@@ -936,15 +943,27 @@ void net_edges_init()
             vector<int> v = {top_left, top_right, bot_left, bot_right};
             sort(v.begin(), v.end()); // default : increasing
             term.edges[0] = v[1];
-            term.edges[0] = ceil((term.edges[0] - TerminalSpacing - TerminalSize_X / 2) / (TerminalSize_X + TerminalSpacing));
+            term.edges[0] = ceil((float)max((int)(term.edges[0] - TerminalSpacing - TerminalSize_X) / 2, 0) / (float)(TerminalSize_X + TerminalSpacing));
             term.edges[1] = v[2];
-            term.edges[1] = floor((term.edges[1] - TerminalSpacing - TerminalSize_X / 2) / (TerminalSize_X + TerminalSpacing));
+            term.edges[1] = floor((float)max((int)(term.edges[1] - TerminalSpacing - TerminalSize_X) / 2, 0) / (float)(TerminalSize_X + TerminalSpacing));
             v = {top_top, top_bot, bot_top, bot_bot};
             sort(v.begin(), v.end());
             term.edges[2] = v[1];
-            term.edges[2] = ceil((term.edges[2] - TerminalSpacing - TerminalSize_Y / 2) / (TerminalSize_Y + TerminalSpacing));
+            term.edges[2] = ceil((float)max((int)(term.edges[2] - TerminalSpacing - TerminalSize_Y) / 2, 0) / (float)(TerminalSize_Y + TerminalSpacing));
             term.edges[3] = v[2];
-            term.edges[3] = floor((term.edges[3] - TerminalSpacing - TerminalSize_Y / 2) / (TerminalSize_Y + TerminalSpacing));
+            term.edges[3] = floor((float)max((int)(term.edges[3] - TerminalSpacing - TerminalSize_Y) / 2, 0) / (float)(TerminalSize_Y + TerminalSpacing));
+            // vector<int> v = {top_left, top_right, bot_left, bot_right};
+            // sort(v.begin(), v.end()); // default : increasing
+            // term.edges[0] = v[1];
+            // term.edges[0] = ceil((term.edges[0] - TerminalSpacing - TerminalSize_X / 2) / (TerminalSize_X + TerminalSpacing));
+            // term.edges[1] = v[2];
+            // term.edges[1] = floor((term.edges[1] - TerminalSpacing - TerminalSize_X / 2) / (TerminalSize_X + TerminalSpacing));
+            // v = {top_top, top_bot, bot_top, bot_bot};
+            // sort(v.begin(), v.end());
+            // term.edges[2] = v[1];
+            // term.edges[2] = ceil((term.edges[2] - TerminalSpacing - TerminalSize_Y / 2) / (TerminalSize_Y + TerminalSpacing));
+            // term.edges[3] = v[2];
+            // term.edges[3] = floor((term.edges[3] - TerminalSpacing - TerminalSize_Y / 2) / (TerminalSize_Y + TerminalSpacing));
 
             if (term.edges[0] > term.edges[1])
             {
@@ -961,22 +980,26 @@ void net_edges_init()
 }
 bool compare_Netsize(Terminal t1, Terminal t2)
 { // to sort Terminals in increasing netsize order
-    return ((t1.edges[1] - t1.edges[0]) * (t1.edges[3] - t1.edges[2]) < (t2.edges[1] - t2.edges[0]) * (t2.edges[3] - t2.edges[2]));
+    return ((t1.edges[1] - t1.edges[0] + 1) * (t1.edges[3] - t1.edges[2] + 1) < (t2.edges[1] - t2.edges[0] + 1) * (t2.edges[3] - t2.edges[2] + 1));
 }
 void slot_init(int &sizex, int &sizey)
 {
-    sizex = floor(DieSize_UR_X - (2 * TerminalSpacing + TerminalSize_X) / (TerminalSpacing + TerminalSize_X));
-    sizey = floor(DieSize_UR_Y - (2 * TerminalSpacing + TerminalSize_Y) / (TerminalSpacing + TerminalSize_Y));
-    slot_arr = new int[sizex * sizey * 2]();
-    for (auto terminal : Terminals)
+    sizex = floor((float)(DieSize_UR_X - (2 * TerminalSpacing + TerminalSize_X)) / (float)(TerminalSpacing + TerminalSize_X)) + 1;
+    sizey = floor((float)(DieSize_UR_Y - (2 * TerminalSpacing + TerminalSize_Y)) / (float)(TerminalSpacing + TerminalSize_Y)) + 1;
+    slot_arr = new int[(sizex + 1) * (sizey + 1) * 2]();
+    for (auto &terminal : Terminals)
     { // bounded in slot array
         terminal.edges[0] = max(0, terminal.edges[0]);
-        terminal.edges[1] = min(sizex, terminal.edges[1]);
+        terminal.edges[1] = min(sizex - 1, terminal.edges[1]);
         terminal.edges[2] = max(0, terminal.edges[2]);
-        terminal.edges[3] = min(sizey, terminal.edges[3]);
+        terminal.edges[3] = min(sizey - 1, terminal.edges[3]);
     }
     sort(Terminals.begin(), Terminals.end(), compare_Netsize); // sort Terminals in increasing netsize order
-    for (auto terminal : Terminals)
+    // for (auto &t1 : Terminals){
+    //     cout<<t1.netName<<endl;
+    //     cout<<(t1.edges[1] - t1.edges[0] + 1) * (t1.edges[3] - t1.edges[2] + 1)<<endl;
+    // }
+    for (auto &terminal : Terminals)
     {
         for (int i = terminal.edges[0]; i <= terminal.edges[1]; i++)
         {
@@ -987,16 +1010,19 @@ void slot_init(int &sizex, int &sizey)
             }
         }
     }
-    return;
+    // for(int i=0;i<sizex*sizey;i++){
+    //     cout<<slot_arr[i];
+    // }
+    // return;
 }
-bool check_replace(Terminal terminal, int x, int y, int sizex, int sizey)
+bool check_replace(Terminal *terminal, int x, int y, int sizex, int sizey)
 {
     int min_layer = 2 ^ 30;
     int temp_x = 0, temp_y = 0;
     bool found = false;
-    for (int i = terminal.edges[0]; i <= terminal.edges[1]; i++)
+    for (int i = terminal->edges[0]; i <= terminal->edges[1]; i++)
     {
-        for (int j = terminal.edges[2]; j <= terminal.edges[3]; j++)
+        for (int j = terminal->edges[2]; j <= terminal->edges[3]; j++)
         {
             if ((slot_arr[1 * sizex * sizey + j * sizex + i] == 0) && (slot_arr[0 * sizex * sizey + j * sizex + i] < min_layer))
             {
@@ -1009,38 +1035,38 @@ bool check_replace(Terminal terminal, int x, int y, int sizex, int sizey)
     }
     if (found)
     {
-        slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal.netNum;
+        slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal->netNum;
         slot_arr[1 * sizex * sizey + y * sizex + x] = 0;
-        terminal.center_x = temp_x;
-        terminal.center_y = temp_y;
+        terminal->center_x = temp_x;
+        terminal->center_y = temp_y;
     }
     return (found);
 }
-bool ripple(Terminal terminal, int sizex, int sizey)
+bool ripple(Terminal *terminal, int sizex, int sizey)
 {
-    for (int i = terminal.edges[0]; i <= terminal.edges[1]; i++)
+    for (int i = terminal->edges[0]; i <= terminal->edges[1]; i++)
     {
-        for (int j = terminal.edges[2]; j <= terminal.edges[3]; j++)
+        for (int j = terminal->edges[2]; j <= terminal->edges[3]; j++)
         {
             int occupying_term = slot_arr[1 * sizex * sizey + j * sizex + i];
             auto it = find_if(Terminals.begin(), Terminals.end(), [occupying_term](Terminal term)
                               { return term.netNum == occupying_term; });
-            if (check_replace((*it), i, j, sizex, sizey))
+            if (check_replace(&(*it), i, j, sizex, sizey))
             {
-                slot_arr[1 * sizex * sizey + j * sizex + i] = terminal.netNum;
-                terminal.center_x = i;
-                terminal.center_y = j;
+                slot_arr[1 * sizex * sizey + j * sizex + i] = terminal->netNum;
+                terminal->center_x = i;
+                terminal->center_y = j;
                 return (true);
             }
         }
     }
     return (false);
 }
-void search_slot(Terminal terminal, int sizex, int sizey)
+void search_slot(Terminal *terminal, int sizex, int sizey)
 {
     bool found = false;
     int i = 0, min_layer = 2 ^ 30, temp_x, temp_y;
-    int l = terminal.edges[0], r = terminal.edges[1], b = terminal.edges[2], t = terminal.edges[3];
+    int l = terminal->edges[0], r = terminal->edges[1], b = terminal->edges[2], t = terminal->edges[3];
     while (found == false)
     {
         if ((l - i) >= 0)
@@ -1056,7 +1082,7 @@ void search_slot(Terminal terminal, int sizex, int sizey)
                 }
             }
         }
-        if ((r + i) <= sizex)
+        if ((r + i) <= sizex - 1)
         {
             for (int j = max(0, b - i); j <= min(sizey, t + i); j++)
             {
@@ -1082,7 +1108,7 @@ void search_slot(Terminal terminal, int sizex, int sizey)
                 }
             }
         }
-        if ((t + i) <= sizey)
+        if ((t + i) <= sizey - 1)
         {
             for (int j = max(0, l - i); j <= min(sizex, r + i); j++)
             {
@@ -1097,15 +1123,15 @@ void search_slot(Terminal terminal, int sizex, int sizey)
         }
         i = i + 1;
     }
-    slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal.netNum;
-    terminal.center_x = temp_x;
-    terminal.center_y = temp_y;
+    slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal->netNum;
+    terminal->center_x = temp_x;
+    terminal->center_y = temp_y;
 }
-void place_terminal(const int &sizex, const int &sizey)
+void place_terminal(const int sizex, const int sizey)
 { // placing terminals by searching 2 levels
     int temp_x = 0, temp_y = 0, min_layer = 2 ^ 30;
     bool found = false;
-    for (auto terminal : Terminals)
+    for (auto &terminal : Terminals)
     {
         temp_x = 0;
         temp_y = 0;
@@ -1113,7 +1139,7 @@ void place_terminal(const int &sizex, const int &sizey)
         found = false;
         for (int i = terminal.edges[0]; i <= terminal.edges[1]; i++)
         {
-            found = false;
+
             for (int j = terminal.edges[2]; j <= terminal.edges[3]; j++)
             {
 
@@ -1134,9 +1160,9 @@ void place_terminal(const int &sizex, const int &sizey)
         }
         else
         {
-            if (!ripple(terminal, sizex, sizey))
+            if (!ripple(&terminal, sizex, sizey))
             {
-                search_slot(terminal, sizex, sizey);
+                search_slot(&terminal, sizex, sizey);
             }
         }
         for (int i = terminal.edges[0]; i <= terminal.edges[1]; i++)
@@ -1153,7 +1179,7 @@ void place_terminal(const int &sizex, const int &sizey)
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
 void NTUplace_TOP(string filename);
 void NTUplace_BOT(string filename);
-void NTUplace_Get_Placement_Result(string filename);
+void NTUplace_Get_Placement_Result(string filename, bool top_or_not);
 void NTUplace_BOT_PinProjection(string filename);
 //////////////////////////////// Write the Output File ////////////////////////////////
 void Output_Format(string filename);
@@ -1361,77 +1387,69 @@ int main(int argc, char *argv[])
             }
         }
     }
-    /*
-    for (int i = 0; i < NumInstances; i++)
+    // 讀檔結束決定ICCAD_B.cpp要進行(請修改mode為partition或terminal)：
+    // [partition] 1. 進行partition，並生出NTUplace檔；
+    // [terminal]  2. 讀進.ntup.pl檔們，並擺放terminals，生出output_result.txt
+    string mode;
+    cout << "MODE[partition]: Do partition, and generate NTUplace files." << endl;
+    cout << "MODE[terminal]: Do terminal placing, and generate output.txt." << endl;
+    cout << "Enter MODE for ICCAD_B.cpp: ";
+    cin >> mode;
+
+    // NTUplace 檔案相關
+    string Top_NTUplace_filename, Bot_NTUplace_filename;
+    Top_NTUplace_filename = "TOP_PLACE_case2";
+    Bot_NTUplace_filename = "BOT_PLACE_case2";
+
+    if (mode == "partition")
     {
-        cout << Inst[i].AB_ratio << endl;
-    }
-    */
-    ratio_split();
-    // partition_init();
-    print_set();
-    initialize_area();
-    cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
-    cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
+        split_half();
+        partition_init();
 
-    num_terminal();
-    while (1)
-    {
-        bool end = F_M();
-        if (end)
-            break;
-    }
-    num_terminal();
-    print_set();
+        initialize_area();
+        cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
+        cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
+        // print_set();
 
-    initialize_area();
-    cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
-    cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-
-    /*
-        // -------------- NTUplace -------------- //
-        Inst[7].change_top(1);
+        num_terminal();
+        while (1)
+        {
+            bool end = F_M();
+            if (end)
+                break;
+        }
+        num_terminal();
+        // print_set();
+        initialize_area();
+        cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
+        cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
 
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
-        // print_set();
-        string Top_NTUplace_filename, Bot_NTUplace_filename;
-        Top_NTUplace_filename = "TOP_PLACE";
-        Bot_NTUplace_filename = "BOT_PLACE";
-        // NTUplace_TOP(Top_NTUplace_filename);
-        // NTUplace_BOT(Bot_NTUplace_filename);
-        NTUplace_Get_Placement_Result(Top_NTUplace_filename);
+        NTUplace_TOP(Top_NTUplace_filename);
+        NTUplace_BOT(Bot_NTUplace_filename);
+    }
+
+    else if (mode == "terminal")
+    {
+        NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
+        NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
         // NTUplace_BOT_PinProjection(Bot_NTUplace_filename+"_PROJECTION");
-        NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
-
-        for (int i = 0; i < IA.size(); i++)
-        {
-            cout << Inst[IA[i]].instName << ", left low (x,y) = (" << Inst[IA[i]].locationX << "," << Inst[IA[i]].locationY << ")"
-                 << " ,Rotate R" << Inst[IA[i]].rotate << endl;
-        }
-
-        for (int i = 0; i < IB.size(); i++)
-        {
-            cout << Inst[IB[i]].instName << ", left low (x,y) = (" << Inst[IB[i]].locationX << "," << Inst[IB[i]].locationY << ")"
-                 << " ,Rotate R" << Inst[IB[i]].rotate << endl;
-        }
-
-        /// 以下是 for terminal placing 的，結果會存在terminal.center_x跟terminal.center_y裡 ///
-        /// 輸出格式為 terminal.netName terminal.center_x terminal.center_y ///
-        // net_edges_init();
+        // NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
+        Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
+        net_edges_init();
         int sizex = 0, sizey = 0;
-        // slot_init(sizex, sizey);
-        // place_terminal(sizex, sizey);
-        for (auto terminal : Terminals)
+        slot_init(sizex, sizey);
+        place_terminal(sizex, sizey);
+        for (auto &terminal : Terminals)
         {
             terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
-            cout << "terminal.center_x = " << terminal.center_x << endl;
+            // cout << "terminal.center_x = " << terminal.center_x << endl;
             terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
-            cout << "terminal.center_y = " << terminal.center_y << endl;
+            // cout << "terminal.center_y = " << terminal.center_y << endl;
         }
         /// terminal end ///
-
-        Output_Format("case1");
-    */
+        Output_Format("case2");
+    }
 }
 
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
@@ -1645,19 +1663,19 @@ void NTUplace_BOT(string filename)
     }
 }
 
-void NTUplace_Get_Placement_Result(string filename)
+void NTUplace_Get_Placement_Result(string filename, bool top_or_not)
 {
     string a_line;            // File read var.
     vector<string> many_word; // File read var.
     vector<string> word;
-    fstream TOP_Result_File;
-    TOP_Result_File.open(filename + ".ntup.pl");
-    if (TOP_Result_File)
+    fstream Result_File;
+    Result_File.open(filename + ".ntup.pl");
+    if (Result_File)
     {
         cout << "File open!" << endl;
-        getline(TOP_Result_File, a_line);
-        getline(TOP_Result_File, a_line);
-        while (getline(TOP_Result_File, a_line))
+        getline(Result_File, a_line);
+        getline(Result_File, a_line);
+        while (getline(Result_File, a_line))
         {
             many_word = split(a_line, ' ');
             if (many_word.size() == 0)
@@ -1668,6 +1686,7 @@ void NTUplace_Get_Placement_Result(string filename)
             {
                 word = split(many_word[0], '\t');
                 word[0] = word[0].erase(0, 1);
+                Inst[stoi(word[0]) - 1].change_top(top_or_not);
                 Inst[stoi(word[0]) - 1].locationX = stoi(word[1]); // Update LL_X in instances
                 Inst[stoi(word[0]) - 1].locationY = stoi(word[2]); // Update LL_Y in instances
                 // Rotate angle
