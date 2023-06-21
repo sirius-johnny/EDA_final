@@ -169,6 +169,7 @@ void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDie
     int index = 0;
     while (macroSplit > 0)
     {
+        // cout<<"there"<<endl;
         if (Inst[Inst.size() - 1 - index].libCell.is_Macro)
         {
             Inst[Inst.size() - 1 - index].change_top(1);
@@ -179,8 +180,9 @@ void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDie
         index++;
     }
     index = 0;
-    while ((bot_occupied - top_occupied) > 0)
+    while ((bot_occupied - top_occupied) > 0 && index<NumInstances)
     {
+        // cout<<index<<endl;
         if (!Inst[index].libCell.is_Macro)
         {
             Inst[index].change_top(1);
@@ -888,15 +890,15 @@ void net_edges_init()
             vector<int> v = {top_left, top_right, bot_left, bot_right};
             sort(v.begin(), v.end()); // default : increasing
             term.edges[0] = v[1];
-            term.edges[0] = ceil((float)max(term.edges[0] - TerminalSpacing - TerminalSize_X / 2,0) / (float)(TerminalSize_X + TerminalSpacing));
+            term.edges[0] = ceil((float)max((int)(term.edges[0] - TerminalSpacing - TerminalSize_X) / 2,0) / (float)(TerminalSize_X + TerminalSpacing));
             term.edges[1] = v[2];
-            term.edges[1] = floor((float)max(term.edges[1] - TerminalSpacing - TerminalSize_X / 2,0) / (float)(TerminalSize_X + TerminalSpacing));
+            term.edges[1] = floor((float)max((int)(term.edges[1] - TerminalSpacing - TerminalSize_X) / 2,0) / (float)(TerminalSize_X + TerminalSpacing));
             v = {top_top, top_bot, bot_top, bot_bot};
             sort(v.begin(), v.end());
             term.edges[2] = v[1];
-            term.edges[2] = ceil((float)max(term.edges[2] - TerminalSpacing - TerminalSize_Y / 2,0) / (float)(TerminalSize_Y + TerminalSpacing));
+            term.edges[2] = ceil((float)max((int)(term.edges[2] - TerminalSpacing - TerminalSize_Y) / 2,0) / (float)(TerminalSize_Y + TerminalSpacing));
             term.edges[3] = v[2];
-            term.edges[3] = floor((float)max(term.edges[3] - TerminalSpacing - TerminalSize_Y / 2,0) / (float)(TerminalSize_Y + TerminalSpacing));
+            term.edges[3] = floor((float)max((int)(term.edges[3] - TerminalSpacing - TerminalSize_Y) / 2,0) / (float)(TerminalSize_Y + TerminalSpacing));
             // vector<int> v = {top_left, top_right, bot_left, bot_right};
             // sort(v.begin(), v.end()); // default : increasing
             // term.edges[0] = v[1];
@@ -1124,7 +1126,7 @@ void place_terminal(const int sizex, const int sizey)
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
 void NTUplace_TOP(string filename);
 void NTUplace_BOT(string filename);
-void NTUplace_Get_Placement_Result(string filename);
+void NTUplace_Get_Placement_Result(string filename, bool top_or_not);
 void NTUplace_BOT_PinProjection(string filename);
 //////////////////////////////// Write the Output File ////////////////////////////////
 void Output_Format(string filename);
@@ -1332,73 +1334,66 @@ int main(int argc, char *argv[])
             }
         }
     }
+    // 讀檔結束決定ICCAD_B.cpp要進行(請修改mode為partition或terminal)：
+    // [partition] 1. 進行partition，並生出NTUplace檔；
+    // [terminal]  2. 讀進.ntup.pl檔們，並擺放terminals，生出output_result.txt
+    string mode;
+    cout<<"Input MODE for ICCAD_B.cpp: ";
+    cin>>mode;
 
-    // split_half();
-    partition_init();
+    // NTUplace 檔案相關
+    string Top_NTUplace_filename, Bot_NTUplace_filename;
+    Top_NTUplace_filename = "TOP_PLACE_case2";
+    Bot_NTUplace_filename = "BOT_PLACE_case2";
 
-    initialize_area();
-    cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
-    cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-    // print_set();
+    if(mode=="partition"){
+        split_half();
+        partition_init();
 
-    num_terminal();
-    while (1)
-    {
-        bool end = F_M();
-        if (end)
-            break;
-    }
-    num_terminal();
-    // print_set();
+        initialize_area();
+        cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
+        cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
+        // print_set();
 
-    initialize_area();
-    cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
-    cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-
-    /*
-        // -------------- NTUplace -------------- //
-        Inst[7].change_top(1);
+        num_terminal();
+        while (1)
+        {
+            bool end = F_M();
+            if (end)
+                break;
+        }
+        num_terminal();
+        // print_set();
+        initialize_area();
+        cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
+        cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
 
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
-        // print_set();
-        string Top_NTUplace_filename, Bot_NTUplace_filename;
-        Top_NTUplace_filename = "TOP_PLACE";
-        Bot_NTUplace_filename = "BOT_PLACE";
-        // NTUplace_TOP(Top_NTUplace_filename);
-        // NTUplace_BOT(Bot_NTUplace_filename);
-        NTUplace_Get_Placement_Result(Top_NTUplace_filename);
+        NTUplace_TOP(Top_NTUplace_filename);
+        NTUplace_BOT(Bot_NTUplace_filename);
+    }
+
+    else if(mode=="terminal"){
+        NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
+        NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
         // NTUplace_BOT_PinProjection(Bot_NTUplace_filename+"_PROJECTION");
-        NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
-
-        for (int i = 0; i < IA.size(); i++)
-        {
-            cout << Inst[IA[i]].instName << ", left low (x,y) = (" << Inst[IA[i]].locationX << "," << Inst[IA[i]].locationY << ")"
-                 << " ,Rotate R" << Inst[IA[i]].rotate << endl;
-        }
-
-        for (int i = 0; i < IB.size(); i++)
-        {
-            cout << Inst[IB[i]].instName << ", left low (x,y) = (" << Inst[IB[i]].locationX << "," << Inst[IB[i]].locationY << ")"
-                 << " ,Rotate R" << Inst[IB[i]].rotate << endl;
-        }
-
-        /// 以下是 for terminal placing 的，結果會存在terminal.center_x跟terminal.center_y裡 ///
-        /// 輸出格式為 terminal.netName terminal.center_x terminal.center_y ///
-        // net_edges_init();
+        // NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
+        Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
+        net_edges_init();
         int sizex = 0, sizey = 0;
-        // slot_init(sizex, sizey);
-        // place_terminal(sizex, sizey);
-        for (auto terminal : Terminals)
+        slot_init(sizex, sizey);
+        place_terminal(sizex, sizey);
+        for (auto& terminal : Terminals)
         {
             terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
-            cout << "terminal.center_x = " << terminal.center_x << endl;
+            // cout << "terminal.center_x = " << terminal.center_x << endl;
             terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
-            cout << "terminal.center_y = " << terminal.center_y << endl;
+            // cout << "terminal.center_y = " << terminal.center_y << endl;
         }
         /// terminal end ///
-
-        Output_Format("case1");
-    */
+        Output_Format("case2");
+    }
+    
 }
 
 //////////////////////////////// NTUplace Associated Functions ////////////////////////////////
@@ -1612,19 +1607,19 @@ void NTUplace_BOT(string filename)
     }
 }
 
-void NTUplace_Get_Placement_Result(string filename)
+void NTUplace_Get_Placement_Result(string filename, bool top_or_not)
 {
     string a_line;            // File read var.
     vector<string> many_word; // File read var.
     vector<string> word;
-    fstream TOP_Result_File;
-    TOP_Result_File.open(filename + ".ntup.pl");
-    if (TOP_Result_File)
+    fstream Result_File;
+    Result_File.open(filename + ".ntup.pl");
+    if (Result_File)
     {
         cout << "File open!" << endl;
-        getline(TOP_Result_File, a_line);
-        getline(TOP_Result_File, a_line);
-        while (getline(TOP_Result_File, a_line))
+        getline(Result_File, a_line);
+        getline(Result_File, a_line);
+        while (getline(Result_File, a_line))
         {
             many_word = split(a_line, ' ');
             if (many_word.size() == 0)
@@ -1635,6 +1630,7 @@ void NTUplace_Get_Placement_Result(string filename)
             {
                 word = split(many_word[0], '\t');
                 word[0] = word[0].erase(0, 1);
+                Inst[stoi(word[0]) - 1].change_top(top_or_not);
                 Inst[stoi(word[0]) - 1].locationX = stoi(word[1]); // Update LL_X in instances
                 Inst[stoi(word[0]) - 1].locationY = stoi(word[2]); // Update LL_Y in instances
                 // Rotate angle
