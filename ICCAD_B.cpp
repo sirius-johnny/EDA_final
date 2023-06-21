@@ -274,10 +274,12 @@ void update_set()
         if (Inst[i].top)
         {
             IA.push_back(i);
+            Inst[i].libCell = TA[Inst[i].index];
         }
         else
         {
             IB.push_back(i);
+            Inst[i].libCell = TB[Inst[i].index];
         }
     }
     return;
@@ -1188,7 +1190,7 @@ void Output_Format(string filename);
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case2.txt", ios::in);
+    fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1400,14 +1402,14 @@ int main(int argc, char *argv[])
 
     // NTUplace 檔案相關
     string Top_NTUplace_filename, Bot_NTUplace_filename;
-    Top_NTUplace_filename = "TOP_PLACE_case2_withpinpro_MRT";
-    Bot_NTUplace_filename = "BOT_PLACE_case2_withpinpro_single_MRT";
+    Top_NTUplace_filename = "TOP_PLACE_case1";
+    Bot_NTUplace_filename = "BOT_PLACE_case1_pinprojection";
 
     if (mode == "partition")
     {
         split_half();
-        partition_init();
-        // ratio_split();
+        // partition_init();
+        ratio_split();
 
         initialize_area();
         cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
@@ -1422,11 +1424,11 @@ int main(int argc, char *argv[])
                 break;
         }
         num_terminal();
-        // print_set();
         initialize_area();
         cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
         cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-
+        update_set();
+        print_set();
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
         NTUplace_TOP(Top_NTUplace_filename);
         NTUplace_BOT(Bot_NTUplace_filename);
@@ -1459,7 +1461,7 @@ int main(int argc, char *argv[])
             // cout << "terminal.center_y = " << terminal.center_y << endl;
         }
         /// terminal end ///
-        Output_Format("case2_withpinprojection_single_MRT");
+        Output_Format("case1_pinprojection");
     }
 }
 
