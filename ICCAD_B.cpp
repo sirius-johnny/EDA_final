@@ -77,6 +77,7 @@ public:
     Instance *next, *previous;
     bool locked, temp_top;
     int instindex;
+    long double AB_ratio;
     Instance(string instName, string libCellName)
     {
         this->instName = instName;
@@ -102,6 +103,7 @@ public:
         locked = 0;
         temp_top = 0;
         instindex = 0;
+        AB_ratio = double(sizeA) / (sizeB);
     }
     void input_nets(int pin, int net)
     {
@@ -140,6 +142,12 @@ struct Terminal
     int center_x, center_y;
     int edges[4]; // left,right,bottom,left
 };
+struct Ratio
+{
+    long double AB_ratio;
+    int index;
+};
+
 vector<Terminal> Terminals;
 vector<Instance> Inst;
 Net *Nets;
@@ -202,44 +210,6 @@ void split_half()
     }
     return;
 }
-
-void print_set()
-{
-    IA.clear();
-    IB.clear();
-    for (int i = 0; i < NumInstances; i++)
-    {
-        if (Inst[i].top)
-        {
-            IA.push_back(i);
-        }
-        else
-        {
-            IB.push_back(i);
-        }
-    }
-    cout << "IA: ";
-    for (int i = 0; i < IA.size(); i++)
-    {
-        cout << IA[i] << " ";
-    }
-    cout << endl
-         << "IB: ";
-    for (int i = 0; i < IB.size(); i++)
-    {
-        cout << IB[i] << " ";
-    }
-    cout << endl;
-    return;
-}
-void print_gain()
-{
-    for (int i = 0; i < NumInstances; i++)
-    {
-        cout << Inst[i].temp_gain << " ";
-    }
-    cout << endl;
-}
 void initialize_area()
 {
     areaA = 0;
@@ -254,6 +224,86 @@ void initialize_area()
             areaB += Inst[i].sizeB;
     }
 }
+bool mycompare(Ratio r1, Ratio r2)
+{
+    return (r1.AB_ratio < r2.AB_ratio);
+}
+void ratio_split()
+{
+    vector<Ratio> r;
+    for (int i = 0; i < NumInstances; i++)
+    {
+        Ratio c;
+        c.index = i;
+        c.AB_ratio = Inst[i].AB_ratio;
+        r.push_back(c);
+    }
+    /*
+    for (int i = 0; i < NumInstances; i++)
+    {
+        cout << r[i].index;
+    }
+    */
+    std::sort(r.begin(), r.end(), mycompare);
+    /*
+    for (int i = 0; i < NumInstances; i++)
+    {
+        cout << r[i].index;
+    }
+    */
+    initialize_area();
+    for (int i = 0; i < NumInstances; i++)
+    {
+        if (areaA + Inst[r[i].index].sizeA < max_areaA)
+        {
+            Inst[r[i].index].change_top(1);
+            areaA += Inst[r[i].index].sizeA;
+        }
+    }
+}
+void update_set()
+{
+    IA.clear();
+    IB.clear();
+
+    for (int i = 0; i < NumInstances; i++)
+    {
+        if (Inst[i].top)
+        {
+            IA.push_back(i);
+        }
+        else
+        {
+            IB.push_back(i);
+        }
+    }
+    return;
+}
+void print_set()
+{
+    update_set();
+    cout << "IA: ";
+    for (int i = 0; i < IA.size(); i++)
+    {
+        cout << IA[i] << " ";
+    }
+    cout << endl
+         << "IB: ";
+    for (int i = 0; i < IB.size(); i++)
+    {
+        cout << IB[i] << " ";
+    }
+    cout << endl;
+}
+void print_gain()
+{
+    for (int i = 0; i < NumInstances; i++)
+    {
+        cout << Inst[i].temp_gain << " ";
+    }
+    cout << endl;
+}
+
 void initialize_gain()
 {
     // area initialize
@@ -748,6 +798,26 @@ int max_gain()
     }
     return -1;
 }
+int num_terminal()
+{
+    int num = 0;
+    for (int i = 0; i < NumNets; i++)
+    {
+        int NA = 0;
+        int NB = 0;
+        for (int j = 0; j < Nets[i].Pin_num; j++)
+        {
+            if (Inst[Nets[i].Ins_Pin[j][0]].top)
+                NA++;
+            else
+                NB++;
+        }
+        if ((NA != 0) && (NB != 0))
+            num++;
+    }
+    cout << "num_terminal = " << num << endl;
+    return num;
+}
 bool F_M()
 {
     cout << "enter" << endl;
@@ -784,35 +854,17 @@ bool F_M()
             G_index = i;
         }
     }
-    // cout << endl         << G_index << " " << max << endl;
+    cout << " " << max << endl;
     if (G_index < 0)
         return 1;
     for (int i = 0; i <= G_index; i++)
     {
-        Inst[G[i].index].change_top(!Inst[G[i].index].top);
+        Inst[G[i].index].top = (!Inst[G[i].index].top);
     }
+    num_terminal();
     return 0;
 }
-int num_terminal()
-{
-    int num = 0;
-    for (int i = 0; i < NumNets; i++)
-    {
-        int NA = 0;
-        int NB = 0;
-        for (int j = 0; j < Nets[i].Pin_num; j++)
-        {
-            if (Inst[Nets[i].Ins_Pin[j][0]].top)
-                NA++;
-            else
-                NB++;
-        }
-        if ((NA != 0) && (NB != 0))
-            num++;
-    }
-    cout << "num_terminal = " << num << endl;
-    return num;
-}
+
 int Top_NumPins, Bot_NumPins;
 void Net_degree_counter()
 {
@@ -1109,7 +1161,7 @@ void Output_Format(string filename);
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case2.txt", ios::in);
+    fin.open("ProblemB_case1.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1309,14 +1361,18 @@ int main(int argc, char *argv[])
             }
         }
     }
-
-    // split_half();
-    partition_init();
-
+    /*
+    for (int i = 0; i < NumInstances; i++)
+    {
+        cout << Inst[i].AB_ratio << endl;
+    }
+    */
+    ratio_split();
+    // partition_init();
+    print_set();
     initialize_area();
     cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
     cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-    // print_set();
 
     num_terminal();
     while (1)
@@ -1326,7 +1382,7 @@ int main(int argc, char *argv[])
             break;
     }
     num_terminal();
-    // print_set();
+    print_set();
 
     initialize_area();
     cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
