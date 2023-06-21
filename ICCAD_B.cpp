@@ -241,19 +241,7 @@ void ratio_split()
         c.AB_ratio = Inst[i].AB_ratio;
         r.push_back(c);
     }
-    /*
-    for (int i = 0; i < NumInstances; i++)
-    {
-        cout << r[i].index;
-    }
-    */
     std::sort(r.begin(), r.end(), mycompare);
-    /*
-    for (int i = 0; i < NumInstances; i++)
-    {
-        cout << r[i].index;
-    }
-    */
     initialize_area();
     for (int i = 0; i < NumInstances; i++)
     {
@@ -274,10 +262,12 @@ void update_set()
         if (Inst[i].top)
         {
             IA.push_back(i);
+            Inst[i].libCell = TA[Inst[i].index];
         }
         else
         {
             IB.push_back(i);
+            Inst[i].libCell = TB[Inst[i].index];
         }
     }
     return;
@@ -857,7 +847,7 @@ bool F_M()
             G_index = i;
         }
     }
-    cout << " " << max << endl;
+    cout << "max: " << max << endl;
     if (G_index < 0)
         return 1;
     for (int i = 0; i <= G_index; i++)
@@ -1394,8 +1384,8 @@ int main(int argc, char *argv[])
     cout << "MODE[partition]: Do partition, and generate NTUplace files." << endl;
     cout << "MODE[terminal]: Do terminal placing, and generate output.txt." << endl;
     cout << "Enter MODE for ICCAD_B.cpp: ";
-    cin >> mode;
-
+    // cin >> mode;
+    mode = "partition";
     // NTUplace 檔案相關
     string Top_NTUplace_filename, Bot_NTUplace_filename;
     Top_NTUplace_filename = "TOP_PLACE_case2";
@@ -1403,7 +1393,6 @@ int main(int argc, char *argv[])
 
     if (mode == "partition")
     {
-        split_half();
         partition_init();
 
         initialize_area();
@@ -1416,7 +1405,10 @@ int main(int argc, char *argv[])
         {
             bool end = F_M();
             if (end)
+            {
+                update_set(); // 一定要
                 break;
+            }
         }
         num_terminal();
         // print_set();
