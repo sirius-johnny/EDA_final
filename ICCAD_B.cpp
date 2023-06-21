@@ -962,14 +962,14 @@ void slot_init(int &sizex, int &sizey)
     // }
     // return;
 }
-bool check_replace(Terminal terminal, int x, int y, int sizex, int sizey)
+bool check_replace(Terminal *terminal, int x, int y, int sizex, int sizey)
 {
     int min_layer = 2 ^ 30;
     int temp_x = 0, temp_y = 0;
     bool found = false;
-    for (int i = terminal.edges[0]; i <= terminal.edges[1]; i++)
+    for (int i = terminal->edges[0]; i <= terminal->edges[1]; i++)
     {
-        for (int j = terminal.edges[2]; j <= terminal.edges[3]; j++)
+        for (int j = terminal->edges[2]; j <= terminal->edges[3]; j++)
         {
             if ((slot_arr[1 * sizex * sizey + j * sizex + i] == 0) && (slot_arr[0 * sizex * sizey + j * sizex + i] < min_layer))
             {
@@ -982,38 +982,38 @@ bool check_replace(Terminal terminal, int x, int y, int sizex, int sizey)
     }
     if (found)
     {
-        slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal.netNum;
+        slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal->netNum;
         slot_arr[1 * sizex * sizey + y * sizex + x] = 0;
-        terminal.center_x = temp_x;
-        terminal.center_y = temp_y;
+        terminal->center_x = temp_x;
+        terminal->center_y = temp_y;
     }
     return (found);
 }
-bool ripple(Terminal terminal, int sizex, int sizey)
+bool ripple(Terminal *terminal, int sizex, int sizey)
 {
-    for (int i = terminal.edges[0]; i <= terminal.edges[1]; i++)
+    for (int i = terminal->edges[0]; i <= terminal->edges[1]; i++)
     {
-        for (int j = terminal.edges[2]; j <= terminal.edges[3]; j++)
+        for (int j = terminal->edges[2]; j <= terminal->edges[3]; j++)
         {
             int occupying_term = slot_arr[1 * sizex * sizey + j * sizex + i];
             auto it = find_if(Terminals.begin(), Terminals.end(), [occupying_term](Terminal term)
                               { return term.netNum == occupying_term; });
-            if (check_replace((*it), i, j, sizex, sizey))
+            if (check_replace(&(*it), i, j, sizex, sizey))
             {
-                slot_arr[1 * sizex * sizey + j * sizex + i] = terminal.netNum;
-                terminal.center_x = i;
-                terminal.center_y = j;
+                slot_arr[1 * sizex * sizey + j * sizex + i] = terminal->netNum;
+                terminal->center_x = i;
+                terminal->center_y = j;
                 return (true);
             }
         }
     }
     return (false);
 }
-void search_slot(Terminal terminal, int sizex, int sizey)
+void search_slot(Terminal *terminal, int sizex, int sizey)
 {
     bool found = false;
     int i = 0, min_layer = 2 ^ 30, temp_x, temp_y;
-    int l = terminal.edges[0], r = terminal.edges[1], b = terminal.edges[2], t = terminal.edges[3];
+    int l = terminal->edges[0], r = terminal->edges[1], b = terminal->edges[2], t = terminal->edges[3];
     while (found == false)
     {
         if ((l - i) >= 0)
@@ -1070,9 +1070,9 @@ void search_slot(Terminal terminal, int sizex, int sizey)
         }
         i = i + 1;
     }
-    slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal.netNum;
-    terminal.center_x = temp_x;
-    terminal.center_y = temp_y;
+    slot_arr[1 * sizex * sizey + temp_y * sizex + temp_x] = terminal->netNum;
+    terminal->center_x = temp_x;
+    terminal->center_y = temp_y;
 }
 void place_terminal(const int sizex, const int sizey)
 { // placing terminals by searching 2 levels
@@ -1107,9 +1107,9 @@ void place_terminal(const int sizex, const int sizey)
         }
         else
         {
-            if (!ripple(terminal, sizex, sizey))
+            if (!ripple(&terminal, sizex, sizey))
             {
-                search_slot(terminal, sizex, sizey);
+                search_slot(&terminal, sizex, sizey);
             }
         }
         for (int i = terminal.edges[0]; i <= terminal.edges[1]; i++)
@@ -1338,7 +1338,9 @@ int main(int argc, char *argv[])
     // [partition] 1. 進行partition，並生出NTUplace檔；
     // [terminal]  2. 讀進.ntup.pl檔們，並擺放terminals，生出output_result.txt
     string mode;
-    cout<<"Input MODE for ICCAD_B.cpp: ";
+    cout<<"MODE[partition]: Do partition, and generate NTUplace files."<<endl;
+    cout<<"MODE[terminal]: Do terminal placing, and generate output.txt."<<endl;
+    cout<<"Enter MODE for ICCAD_B.cpp: ";
     cin>>mode;
 
     // NTUplace 檔案相關
