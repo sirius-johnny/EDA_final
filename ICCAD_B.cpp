@@ -1178,7 +1178,7 @@ void Output_Format(string filename);
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case1.txt", ios::in);
+    fin.open("ProblemB_case3.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1395,9 +1395,14 @@ int main(int argc, char *argv[])
 
     if (mode == "partition")
     {
-        split_half();
-        // partition_init();
-        ratio_split();
+        if (NumTechnologies == "1")
+        {
+            partition_init();
+        }
+        else
+        {
+            ratio_split();
+        }
 
         initialize_area();
         cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
@@ -1418,8 +1423,6 @@ int main(int argc, char *argv[])
         initialize_area();
         cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
         cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-        update_set();
-        print_set();
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
         NTUplace_TOP(Top_NTUplace_filename);
         NTUplace_BOT(Bot_NTUplace_filename);
