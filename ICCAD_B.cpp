@@ -968,6 +968,115 @@ void net_edges_init()
     }
     return;
 }
+void net_edges_init_top()
+{
+    for (int i = 0; i < NumNets; i++)
+    {
+        int top_left = DieSize_UR_X, top_right = DieSize_LL_X, top_top = DieSize_LL_Y, top_bot = DieSize_UR_Y;
+        int bot_left = DieSize_UR_X, bot_right = DieSize_LL_X, bot_top = DieSize_LL_Y, bot_bot = DieSize_UR_Y;
+        int pin_x, pin_y;
+        if (Nets[i].Top_degree * Nets[i].Bot_degree > 0)
+        {
+            Terminal term{"N" + to_string(i + 1), i + 1, 0, 0, {0, 0, 0, 0}};
+            for (int j = 0; j < Nets[i].Pin_num; j++)
+            {
+                string inst_name = "C" + to_string(Nets[i].Ins_Pin[j][0] + 1); // index of instance 0=>C1
+                string pin_name = "P" + to_string(Nets[i].Ins_Pin[j][1] + 1);  // index of instance 0=>C1
+                auto it = find_if(Inst.begin(), Inst.end(), [inst_name](Instance obj)
+                                  { return obj.instName == inst_name; });
+                if (it == Inst.end())
+                {
+                    cout << "net_edges_init error" << endl;
+                }
+                LibCell libcell = it->libCell;
+                auto it2 = find_if(libcell.pin, libcell.pin + libcell.Pin_count, [pin_name](Pin pin)
+                                   { return pin.pinName == pin_name; });
+                if (it2 == libcell.pin + libcell.Pin_count)
+                {
+                    cout << "net_edges_init error" << endl;
+                }
+                pin_x = it->locationX + it2->pinLocationX;
+                pin_y = it->locationY + it2->pinLocationY;
+                if (it->top == 1)
+                {
+                    top_left = (top_left > pin_x) ? pin_x : top_left;
+                    top_right = (top_right < pin_x) ? pin_x : top_right;
+                    top_top = (top_top < pin_y) ? pin_y : top_top;
+                    top_bot = (top_bot > pin_y) ? pin_y : top_bot;
+                }
+                else if (it->top == 0)
+                {
+                    bot_left = (bot_left > pin_x) ? pin_x : bot_left;
+                    bot_right = (bot_right < pin_x) ? pin_x : bot_right;
+                    bot_top = (bot_top < pin_y) ? pin_y : bot_top;
+                    bot_bot = (bot_bot > pin_y) ? pin_y : bot_bot;
+                }
+            }
+            vector<int> v = {top_left, top_right, 0, int(DieSize_UR_X)};
+            sort(v.begin(), v.end()); // default : increasing
+            term.edges[0] = v[1];
+            term.edges[0] = ceil((float)max((int)(term.edges[0] - TerminalSpacing - TerminalSize_X) / 2, 0) / (float)(TerminalSize_X + TerminalSpacing));
+            term.edges[1] = v[2];
+            term.edges[1] = floor((float)max((int)(term.edges[1] - TerminalSpacing - TerminalSize_X) / 2, 0) / (float)(TerminalSize_X + TerminalSpacing));
+            v = {top_top, top_bot, int(DieSize_UR_Y) , 0};
+            sort(v.begin(), v.end());
+            term.edges[2] = v[1];
+            term.edges[2] = ceil((float)max((int)(term.edges[2] - TerminalSpacing - TerminalSize_Y) / 2, 0) / (float)(TerminalSize_Y + TerminalSpacing));
+            term.edges[3] = v[2];
+            term.edges[3] = floor((float)max((int)(term.edges[3] - TerminalSpacing - TerminalSize_Y) / 2, 0) / (float)(TerminalSize_Y + TerminalSpacing));
+            // vector<int> v = {top_left, top_right, bot_left, bot_right};
+            // sort(v.begin(), v.end()); // default : increasing
+            // term.edges[0] = v[1];
+            // term.edges[0] = ceil((term.edges[0] - TerminalSpacing - TerminalSize_X / 2) / (TerminalSize_X + TerminalSpacing));
+            // term.edges[1] = v[2];
+            // term.edges[1] = floor((term.edges[1] - TerminalSpacing - TerminalSize_X / 2) / (TerminalSize_X + TerminalSpacing));
+            // v = {top_top, top_bot, bot_top, bot_bot};
+            // sort(v.begin(), v.end());
+            // term.edges[2] = v[1];
+            // term.edges[2] = ceil((term.edges[2] - TerminalSpacing - TerminalSize_Y / 2) / (TerminalSize_Y + TerminalSpacing));
+            // term.edges[3] = v[2];
+            // term.edges[3] = floor((term.edges[3] - TerminalSpacing - TerminalSize_Y / 2) / (TerminalSize_Y + TerminalSpacing));
+
+            if (term.edges[0] > term.edges[1])
+            {
+                swap(term.edges[0], term.edges[1]);
+            }
+            if (term.edges[2] > term.edges[3])
+            {
+                swap(term.edges[2], term.edges[3]);
+            }
+            Terminals.push_back(term);
+        }
+    }
+    return;
+}
+
+void net_edges_init_V2()
+{
+    for (int i = 0; i < NumNets; i++)
+    {
+        if (Nets[i].Top_degree * Nets[i].Bot_degree > 0)
+        {
+            Terminal term{"N" + to_string(i + 1), i + 1, 0, 0, {0, 0, 0, 0}};
+            Terminals.push_back(term);
+        }
+    }
+    return;
+}
+
+void slot_init_V2(int &sizex, int &sizey)
+{
+    sizex = floor((float)(DieSize_UR_X - (2 * TerminalSpacing + TerminalSize_X)) / (float)(TerminalSpacing + TerminalSize_X)) + 1;
+    sizey = floor((float)(DieSize_UR_Y - (2 * TerminalSpacing + TerminalSize_Y)) / (float)(TerminalSpacing + TerminalSize_Y)) + 1;
+}
+
+void terminal_in_order(int sizex, int sizey){
+    for(int i=0; i < Terminals.size(); i++){
+        Terminals[i].center_x = i%sizex;
+        Terminals[i].center_y = i/sizex;
+    }
+}
+
 bool compare_Netsize(Terminal t1, Terminal t2)
 { // to sort Terminals in increasing netsize order
     return ((t1.edges[1] - t1.edges[0] + 1) * (t1.edges[3] - t1.edges[2] + 1) < (t2.edges[1] - t2.edges[0] + 1) * (t2.edges[3] - t2.edges[2] + 1));
@@ -1172,13 +1281,15 @@ void NTUplace_BOT(string filename);
 void NTUplace_Get_Placement_Result(string filename, bool top_or_not);
 void NTUplace_BOT_PinProjection(string filename);
 void NTUplace_BOT_PinProjection_SINGLE(string filename);
+void NTUplace_BOT_TerminalProjection(string filename);
 //////////////////////////////// Write the Output File ////////////////////////////////
 void Output_Format(string filename);
+void TOP_ter_BOT_Output(string TOP_filename, string BOT_filename, string filename);
 
 int main(int argc, char *argv[])
 {
     fstream fin;
-    fin.open("ProblemB_case3.txt", ios::in);
+    fin.open("ProblemB_case4.txt", ios::in);
     // fstream fout;
     // fout.open("o.txt", ios::out);
     if (!fin)
@@ -1384,14 +1495,14 @@ int main(int argc, char *argv[])
     string mode;
     cout << "MODE[partition]: Do partition, and generate NTUplace files." << endl;
     cout << "MODE[pinprojection]: Do pin projecting, and generate BOTTOM NTUplace files." << endl;
-    cout << "MODE[terminal]: Do terminal placing, and generate output.txt." << endl;
+    cout << "MODE[terminal_afterplaceTOPBOT]: Do terminal placing after placing TOP&BOT, and generate output.txt." << endl;
     cout << "Enter MODE for ICCAD_B.cpp: ";
-    // cin >> mode;
-    mode = "partition";
+    cin >> mode;
+    // mode = "partition";
     // NTUplace 檔案相關
     string Top_NTUplace_filename, Bot_NTUplace_filename;
-    Top_NTUplace_filename = "TOP_PLACE_case1";
-    Bot_NTUplace_filename = "BOT_PLACE_case1_pinprojection";
+    Top_NTUplace_filename = "TOP_PLACE_case4";
+    Bot_NTUplace_filename = "BOT_PLACE_case4";
 
     if (mode == "partition")
     {
@@ -1410,7 +1521,8 @@ int main(int argc, char *argv[])
         // print_set();
 
         num_terminal();
-        while (1)
+        F_M();
+        while (0)
         {
             bool end = F_M();
             if (end)
@@ -1419,6 +1531,7 @@ int main(int argc, char *argv[])
                 break;
             }
         }
+        update_set();
         num_terminal();
         initialize_area();
         cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
@@ -1437,12 +1550,55 @@ int main(int argc, char *argv[])
         NTUplace_BOT_PinProjection_SINGLE(Bot_NTUplace_filename);
     }
 
-    else if (mode == "terminal")
+    else if (mode == "terminal_afterplaceTOPBOT")
     {
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
         update_set();
         // NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
+        Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
+        net_edges_init_V2();
+        int sizex = 0, sizey = 0;
+        slot_init_V2(sizex, sizey);
+        terminal_in_order(sizex, sizey);
+        // place_terminal(sizex, sizey);
+        for (auto &terminal : Terminals)
+        {
+            terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
+            terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
+        }
+        /// terminal end ///
+        Output_Format("case4");
+    }
+
+    else if(mode == "terminal_afterplaceTOP"){
+        
+        NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
+        update_set();
+        Net_degree_counter();
+        net_edges_init_top();
+        int sizex = 0, sizey = 0;
+        slot_init(sizex, sizey);
+        place_terminal(sizex, sizey);
+        for (auto &terminal : Terminals)
+        {
+            terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
+            terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
+        }
+        //TODO:印出terminal寫入BOT的NTUplace檔案們
+        NTUplace_BOT_TerminalProjection(Bot_NTUplace_filename);
+    }
+
+    else if(mode == "terminal_afterplaceTOP_RESULT"){
+        string out_filename = "case2_ter_v2";
+        TOP_ter_BOT_Output(Top_NTUplace_filename, Bot_NTUplace_filename, out_filename);
+    }
+
+    else if(mode == "terminal_lookup2times"){
+        //先參考TOP後擺出termminals，再用結果擺出BOT，最後根據TOP和BOT再擺一次terminals
+        NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
+        NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
+        update_set();
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
         net_edges_init();
         int sizex = 0, sizey = 0;
@@ -1451,12 +1607,9 @@ int main(int argc, char *argv[])
         for (auto &terminal : Terminals)
         {
             terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
-            // cout << "terminal.center_x = " << terminal.center_x << endl;
             terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
-            // cout << "terminal.center_y = " << terminal.center_y << endl;
         }
-        /// terminal end ///
-        Output_Format("case1_pinprojection");
+        Output_Format("case2_terminal_lookup2times_V2");
     }
 }
 
@@ -1585,12 +1738,6 @@ void NTUplace_BOT(string filename)
     {
         fnodes << "\t" << Inst[IB[i]].instName << "\t" << Inst[IB[i]].libCell.size_X << "\t" << Inst[IB[i]].libCell.size_Y << endl;
     }
-    //.nets
-    // int Top_net_degree[NumNets] = {0};
-    // int Top_num_pin = 0;
-    // for(int i=0; i<NumNets; i++){
-
-    // }
 
     fstream fnets;
     fnets.open(filename + ".nets", ios::out);
@@ -1987,6 +2134,127 @@ void NTUplace_BOT_PinProjection_SINGLE(string filename)
     }
 }
 
+void NTUplace_BOT_TerminalProjection(string filename)
+{
+    // .aux
+    fstream faux;
+    faux.open(filename + ".aux", ios::out);
+    faux << "RowBasedPlacement : " << filename << ".nodes " << filename << ".nets " << filename << ".wts " << filename << ".pl " << filename << ".scl";
+    faux.close();
+    //.nodes
+    fstream fnodes;
+    fnodes.open(filename + ".nodes", ios::out);
+    fnodes << "UCLA nodes 1.0" << endl
+           << endl;
+    fnodes << "NumNodes : " << IB.size()+Terminals.size() << endl;
+    fnodes << "NumTerminals : " << Terminals.size() << endl;
+    // Terminal還沒存進去喔
+    for(int i=0; i<Terminals.size(); i++){
+        fnodes <<"\t"<< "T"+Terminals[i].netName<<"\t"<<0<<"\t"<<0<<"\t"<<"terminal"<<endl;
+    }
+    for (int i = 0; i < IB.size(); i++)
+    {
+        fnodes << "\t" << Inst[IB[i]].instName << "\t" << Inst[IB[i]].libCell.size_X << "\t" << Inst[IB[i]].libCell.size_Y << endl;
+    }
+
+    fstream fnets;
+    fnets.open(filename + ".nets", ios::out);
+    fnets << "UCLA nets 1.0" << endl
+          << endl;
+    fnets << "NumNets : " << NumNets << endl;
+    fnets << "NumPins : " << Bot_NumPins+Terminals.size() << endl;
+    double pin_x_offset = 0;
+    double pin_y_offset = 0;
+    for (int i = 0; i < NumNets; i++)
+    {
+        bool Ter_place = false;
+        for(int k=0; k<Terminals.size(); k++){
+            if(Terminals[k].netNum==i+1){
+                fnets << "NetDegree : " << Nets[i].Bot_degree+1 << "\t" << "N" << i + 1 << endl;
+                fnets << "\t" << "T"+Terminals[k].netName << " I "<<endl;
+                Ter_place = true;
+                break;
+            }
+        }
+
+        if(!Ter_place){
+            fnets << "NetDegree : " << Nets[i].Bot_degree << "\t" << "N" << i + 1 << endl;
+        }
+        
+        for (int j = 0; j < Nets[i].Pin_num; j++)
+        {
+            if (!Inst[Nets[i].Ins_Pin[j][0]].top)
+            {
+                pin_x_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationX - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_X / 2;
+                pin_y_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationY - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_Y / 2;
+                fnets << "\t" << Inst[Nets[i].Ins_Pin[j][0]].instName << " I : " << pin_x_offset << " " << pin_y_offset << endl;
+            }
+        }
+    }
+    //.wts
+    fstream fwts;
+    fwts.open(filename + ".wts", ios::out);
+    fwts << "UCLA wts 1.0" << endl
+         << endl;
+    for(int i=0; i<Terminals.size(); i++){
+        fwts<<"\t"<<"T"+Terminals[i].netName<<"\t"<<0<<endl;
+    }
+    for (int i = 0; i < IB.size(); i++)
+    {
+        fwts << "\t" << Inst[IB[i]].instName << "\t" << 0 << endl;
+    }
+    //.pl
+    fstream fpl;
+    fpl.open(filename + ".pl", ios::out);
+    fpl << "UCLA pl 1.0" << endl
+        << endl;
+
+    for(int i=0; i<Terminals.size(); i++){
+        fpl<<"T"+Terminals[i].netName<<"\t"<<Terminals[i].center_x<<"\t"<<Terminals[i].center_y<<" : "<<"/FIXED"<<endl;
+    }
+    for (int i = 0; i < IB.size(); i++)
+    {
+        if (!Inst[IB[i]].libCell.is_Macro)
+        {
+            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+                << "N" << endl;
+        }
+        else
+        {
+            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+                << "E" << endl;
+        }
+    }
+
+    //.scl
+    fstream fscl;
+    fscl.open(filename + ".scl", ios::out);
+    fscl << "UCLA scl 1.0" << endl
+         << endl;
+    fscl << "Numrows : " << BottomDieRows_repeat_count << endl
+         << endl;
+    for (int i = 0; i < BottomDieRows_repeat_count; i++)
+    {
+        fscl << "CoreRow Horizontal" << endl;
+        fscl << "\t"
+             << "Coordinate :\t" << i * BottomDieRows_row_height << endl;
+        fscl << "\t"
+             << "Height :\t" << BottomDieRows_row_height << endl;
+        fscl << "\t"
+             << "Sitewidth :\t" << 1 << endl;
+        fscl << "\t"
+             << "Sitespacing :\t" << 1 << endl;
+        fscl << "\t"
+             << "Siteorient :\t" << 1 << endl;
+        fscl << "\t"
+             << "Sitesymmetry :\t"
+             << "Y" << endl;
+        fscl << "\t"
+             << "SubrowOrigin :\t" << 0 << " Numsites :\t" << DieSize_UR_X << endl;
+        fscl << "End" << endl;
+    }
+}
+
 void Output_Format(string filename)
 {
     fstream fout;
@@ -2009,4 +2277,96 @@ void Output_Format(string filename)
         fout << "Terminal " << Terminals[i].netName << " " << Terminals[i].center_x << " " << Terminals[i].center_y << endl;
     }
     fout.close();
+}
+
+void TOP_ter_BOT_Output(string TOP_filename, string BOT_filename, string filename){
+    // READ TOP_PLACEMENT_RESULT_FILE
+    fstream TOP_Result_File;
+    TOP_Result_File.open(TOP_filename+".ntup.pl");
+    vector<string> every_line_in_TOPFILE;
+    string single_line_in_TOPFILE;
+    if(TOP_Result_File){
+        cout<<TOP_filename+".ntup.pl opens !"<<endl;
+        getline(TOP_Result_File, single_line_in_TOPFILE);
+        getline(TOP_Result_File, single_line_in_TOPFILE);
+        while (getline(TOP_Result_File, single_line_in_TOPFILE))
+        {
+            if(single_line_in_TOPFILE=="") break;
+            else every_line_in_TOPFILE.push_back(single_line_in_TOPFILE);
+        }
+    }
+    else{
+        cout<<TOP_filename+".ntup.pl doesn't exist !"<<endl;
+    }
+    TOP_Result_File.close();
+
+    // READ BOT_PLACEMENT_RESULT_FILE
+    fstream BOT_Result_File;
+    BOT_Result_File.open(BOT_filename+".ntup.pl");
+    vector<string> every_line_in_BOTFILE;
+    vector<string> terminal_in_BOTFILE;
+    string single_line_in_BOTFILE;
+    if(BOT_Result_File){
+        cout<<BOT_filename+".ntup.pl opens !"<<endl;
+        getline(BOT_Result_File, single_line_in_BOTFILE);
+        getline(BOT_Result_File, single_line_in_BOTFILE);
+        while (getline(BOT_Result_File, single_line_in_BOTFILE))
+        {
+            if(single_line_in_BOTFILE=="") break;
+            else {
+                vector<string> check;
+                check = split(single_line_in_BOTFILE, ' ');
+                if(check[check.size()-1] != "/FIXED"){
+                    every_line_in_BOTFILE.push_back(single_line_in_BOTFILE);
+                }
+                else{
+                    terminal_in_BOTFILE.push_back(single_line_in_BOTFILE);
+                }
+            }
+        }
+    }
+    else{
+        cout<<BOT_filename+".ntup.pl doesn't exist !"<<endl;
+    }
+    BOT_Result_File.close();
+    
+    // READ TERMINAL_PLACEMENT_RESULT_FILE
+
+    // WRITE casex_result.txt
+    vector<string> many_word;
+    vector<string> word;
+    int rotate = 0;
+
+    fstream fout;
+    fout.open(filename + "_result.txt", ios::out);
+    fout << "TopDiePlacement " << every_line_in_TOPFILE.size() << endl;
+    for (int i = 0; i < every_line_in_TOPFILE.size(); i++)
+    {
+        many_word = split(every_line_in_TOPFILE[i], ' ');
+        word = split(many_word[0], '\t');
+        if(many_word[2]=="N" || many_word[2]=="FN") rotate = 0;
+        else if(many_word[2]=="W" || many_word[2]=="FW") rotate = 90;
+        else if(many_word[2]=="S" || many_word[2]=="FS") rotate = 180;
+        else if(many_word[2]=="E" || many_word[2]=="FE") rotate = 270;
+        fout << "Inst " << word[0] << " " << word[1] << " " << word[2] << " "
+             << "R" << rotate << endl;
+    }
+    fout << "BottomDiePlacement " << every_line_in_BOTFILE.size() << endl;
+    for (int i = 0; i < every_line_in_BOTFILE.size(); i++)
+    {
+        many_word = split(every_line_in_BOTFILE[i], ' ');
+        word = split(many_word[0], '\t');
+        if(many_word[2]=="N" || many_word[2]=="FN") rotate = 0;
+        else if(many_word[2]=="W" || many_word[2]=="FW") rotate = 90;
+        else if(many_word[2]=="S" || many_word[2]=="FS") rotate = 180;
+        else if(many_word[2]=="E" || many_word[2]=="FE") rotate = 270;
+        fout << "Inst " << word[0] << " " << word[1] << " " << word[2] << " "
+             << "R" << rotate << endl;
+    }
+    fout<< "NumTerminals "<<terminal_in_BOTFILE.size()<<endl;
+    for(int i=0; i<terminal_in_BOTFILE.size(); i++){
+        many_word = split(terminal_in_BOTFILE[i], ' ');
+        word = split(many_word[0], '\t');
+        fout<<"Terminal "<<word[0].erase(0,1)<<" "<<stoi(word[1])<<" "<<stoi(word[2])<<endl;
+    }
 }
