@@ -188,8 +188,10 @@ void partition_init() // top_occupied : bot_occupied = TopDieMaxUtil : BottomDie
         index++;
     }
     index = 0;
-    while ((bot_occupied - top_occupied) > 0 && index < NumInstances)
+    while ((bot_occupied - top_occupied) > 0 && index<NumInstances)
     {
+        // cout<<"BOT_OCCUPIED"<<log(bot_occupied)<<endl;
+        // cout<<"TOP_OCCUPIED"<<log(top_occupied)<<endl;
         // cout<<index<<endl;
         if (!Inst[index].libCell.is_Macro)
         {
@@ -249,6 +251,28 @@ void ratio_split()
         {
             Inst[r[i].index].change_top(1);
             areaA += Inst[r[i].index].sizeA;
+        }
+    }
+}
+
+void inverse_ratio_split()
+{
+    vector<Ratio> r;
+    for (int i = 0; i < NumInstances; i++)
+    {
+        Ratio c;
+        c.index = i;
+        c.AB_ratio = Inst[i].AB_ratio;
+        r.push_back(c);
+    }
+    std::sort(r.begin(), r.end(), mycompare);
+    initialize_area();
+    for (int i = 0; i < NumInstances-30000; i++)
+    {
+        if (areaB + Inst[r[i].index].sizeB < max_areaB)
+        {
+            Inst[r[i].index].change_top(0);
+            areaB += Inst[r[i].index].sizeB;
         }
     }
 }
@@ -1197,6 +1221,7 @@ bool ripple_better(Terminal *terminal, int sizex, int sizey)
                         slot_arr[1 * sizex * sizey + l * sizex + k] = occu_term->netNum;
                         occu_term->center_x = k;
                         occu_term->center_y = l;
+                        slot_arr[1 * sizex * sizey + j * sizex + i] = terminal->netNum;
                         terminal->center_x = i;
                         terminal->center_y = j;
                         return(true);
@@ -1334,6 +1359,8 @@ void NTUplace_BOT_TerminalProjection(string filename);
 //////////////////////////////// Write the Output File ////////////////////////////////
 void Output_Format(string filename);
 void TOP_ter_BOT_Output(string TOP_filename, string BOT_filename, string filename);
+
+int *offset_index;
 
 int main(int argc, char *argv[])
 {
@@ -1494,12 +1521,15 @@ int main(int argc, char *argv[])
         getline(fin, lineStr);
         words = split(lineStr, ' ');
         NumInstances = stoi(words[1]);
-
+        offset_index = new int[NumInstances];
         for (int i = 0; i < NumInstances; i++)
         {
             getline(fin, lineStr);
             words = split(lineStr, ' ');
+            string wd = words[1];
+            offset_index[stoi(wd.erase(0,1))-1] = i;
             Instance inst(words[1], words[2]);
+            // if(i+1!=stoi(words[1].erase(0,1))){cout<<"FUCK"<<i<<endl;break;}
             inst.instindex = i;
             Inst.push_back(inst);
             if (inst.libCell.is_Macro)
@@ -1533,7 +1563,9 @@ int main(int argc, char *argv[])
                 getline(fin, lineStr);
                 words = split(lineStr, ' ');
                 vector<string> cut = split(words[1], '/');
-                Nets[i].Ins_Pin[j][0] = stoi(cut[0].erase(0, 1)) - 1;
+                // string name = cut[0];
+                
+                Nets[i].Ins_Pin[j][0] = offset_index[stoi(cut[0].erase(0, 1)) - 1];
                 Nets[i].Ins_Pin[j][1] = stoi(cut[1].erase(0, 1)) - 1;
                 // cout << Nets[i].Ins_Pin[j][0] << " " << Nets[i].Ins_Pin[j][1] << endl;
                 Inst[Nets[i].Ins_Pin[j][0]].input_nets(Nets[i].Ins_Pin[j][1], i);
@@ -1543,8 +1575,6 @@ int main(int argc, char *argv[])
     cout<<"Reading file FINISH"<<endl;
     cout<<"-------------------"<<endl;
     // 讀檔結束決定ICCAD_B.cpp要進行(請修改mode為partition或terminal)：
-    // [partition] 1. 進行partition，並生出NTUplace檔；
-    // [terminal]  2. 讀進.ntup.pl檔們，並擺放terminals，生出output_result.txt
     string mode;
     cout << "MODE[partition]                        DO>> partition, and generate NTUplace files." << endl;
     cout << "MODE[pinprojection]                    DO>> pin projecting, and generate BOTTOM NTUplace files." << endl;
@@ -1554,8 +1584,8 @@ int main(int argc, char *argv[])
     cout << "MODE[terminal_lookup2times_RESULT]     OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP, then placing BOT, placing terminal again."<<endl;
     cout << "Enter MODE for ICCAD_B.cpp: ";
     cin >> mode;
-    // mode = "partition";
-    // NTUplace 檔案相關
+    cout<<"-----------------------------------------"<<endl;
+    // cout<<Inst[99669-1].libCellName<<" "<<Inst[99669-1].libCePll.Name<<" "<<Inst[99669-1].libCell.size_X<<" "<<Inst[99669-1].libCell.size_Y<<endl;
     string Top_NTUplace_filename, Bot_NTUplace_filename;
     if (mode == "partition")
     {
@@ -1563,6 +1593,8 @@ int main(int argc, char *argv[])
         cin>>Top_NTUplace_filename;
         cout<< "Enter Bot_NTUplace_filename, generate: ";
         cin>>Bot_NTUplace_filename;
+
+        // partition_init();
         if (NumTechnologies == "1")
         {
             partition_init();
@@ -1571,14 +1603,16 @@ int main(int argc, char *argv[])
         {
             ratio_split();
         }
+        // ratio_split();
+        // update_set();
 
         initialize_area();
-        cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
+        cout << "max_areaA=    " << max_areaA << ", max_areaB=     " << max_areaB << endl;
         cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-        // print_set();
+        print_set();
         num_terminal();
 
-        F_M(); // case4時要開啟這行，做一次FM就好
+        // F_M(); // case4時要開啟這行，做一次FM就好  
         while (1) // case4先把1改成0
         {
             bool end = F_M();
@@ -1592,11 +1626,12 @@ int main(int argc, char *argv[])
 
         num_terminal();
         initialize_area();
-        cout << "max_areaA=    " << max_areaA << ", maxareaB=     " << max_areaB << endl;
+        cout << "max_areaA=    " << max_areaA << ", max_areaB=     " << max_areaB << endl;
         cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
         NTUplace_TOP(Top_NTUplace_filename);
         NTUplace_BOT(Bot_NTUplace_filename);
+        // cout<<Inst[99669-1].libCellName<<" "<<Inst[99669-1].libCell.Name<<" "<<Inst[99669-1].libCell.size_X<<" "<<Inst[99669-1].libCell.size_Y<<endl;
     }
 
     else if (mode == "pinprojection")
@@ -1605,6 +1640,7 @@ int main(int argc, char *argv[])
         cin>>Top_NTUplace_filename;
         cout<< "Enter Bot_NTUplace_filename, generate: ";
         cin>>Bot_NTUplace_filename;
+
         print_set();
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         update_set();
@@ -1618,16 +1654,25 @@ int main(int argc, char *argv[])
         cin>>Top_NTUplace_filename;
         cout<< "Enter Bot_NTUplace_filename, open: ";
         cin>>Bot_NTUplace_filename;
+
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
         update_set();
         // NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
-        net_edges_init();
+
+        // fstream fout;
+        // fout.open("Terminal.txt", ios::out);
+        // for(int i=0; i<NumNets; i++){
+        //     if(Nets[i].Top_degree * Nets[i].Bot_degree != 0){
+        //         fout<<"Terminal "<<"N"<<i+1<<endl;
+        //     }
+        // }
+        net_edges_init_V2();
         int sizex = 0, sizey = 0;
-        slot_init(sizex, sizey);
-        // terminal_in_order(sizex, sizey);
-        place_terminal(sizex, sizey);
+        slot_init_V2(sizex, sizey);
+        terminal_in_order(sizex, sizey);
+        // place_terminal(sizex, sizey);
         for (auto &terminal : Terminals)
         {
             terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
@@ -1643,6 +1688,7 @@ int main(int argc, char *argv[])
         cin>>Top_NTUplace_filename;
         cout<< "Enter Bot_NTUplace_filename, generate: ";
         cin>>Bot_NTUplace_filename;
+
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         update_set();
         Net_degree_counter();
@@ -1664,6 +1710,7 @@ int main(int argc, char *argv[])
         cin>>Top_NTUplace_filename;
         cout<< "Enter Bot_NTUplace_filename, open: ";
         cin>>Bot_NTUplace_filename;
+
         TOP_ter_BOT_Output(Top_NTUplace_filename, Bot_NTUplace_filename, case_filename+"-"+mode);
     }
 
@@ -1673,6 +1720,7 @@ int main(int argc, char *argv[])
         cin>>Top_NTUplace_filename;
         cout<< "Enter Bot_NTUplace_filename, open: ";
         cin>>Bot_NTUplace_filename;
+        
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
         update_set();
@@ -1765,8 +1813,8 @@ void NTUplace_TOP(string filename)
         }
         else
         {
-            fpl << Inst[IA[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
-                << "E" << endl;
+            fpl << Inst[IA[i]].instName <<"\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+                << "N" << endl;
         }
     }
 
@@ -1816,7 +1864,7 @@ void NTUplace_BOT(string filename)
     // Terminal還沒存進去喔
     for (int i = 0; i < IB.size(); i++)
     {
-        fnodes << "\t" << Inst[IB[i]].instName << "\t" << Inst[IB[i]].libCell.size_X << "\t" << Inst[IB[i]].libCell.size_Y << endl;
+        fnodes << "\t" <<Inst[IB[i]].instName << "\t" << Inst[IB[i]].libCell.size_X << "\t" << Inst[IB[i]].libCell.size_Y << endl;
     }
 
     fstream fnets;
@@ -1837,7 +1885,7 @@ void NTUplace_BOT(string filename)
             {
                 pin_x_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationX - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_X / 2;
                 pin_y_offset = Inst[Nets[i].Ins_Pin[j][0]].libCell.pin[Nets[i].Ins_Pin[j][1]].pinLocationY - Inst[Nets[i].Ins_Pin[j][0]].libCell.size_Y / 2;
-                fnets << "\t" << Inst[Nets[i].Ins_Pin[j][0]].instName << " I : " << pin_x_offset << " " << pin_y_offset << endl;
+                fnets << "\t" <<Inst[Nets[i].Ins_Pin[j][0]].instName<< " I : " << pin_x_offset << " " << pin_y_offset << endl;
             }
         }
     }
@@ -1864,8 +1912,8 @@ void NTUplace_BOT(string filename)
         }
         else
         {
-            fpl << Inst[IB[i]].instName << "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
-                << "E" << endl;
+            fpl << Inst[IB[i]].instName<< "\t" << DieSize_UR_X / 2 << "\t" << DieSize_UR_Y / 2 << " : "
+                << "N" << endl;
         }
     }
 
@@ -1921,25 +1969,25 @@ void NTUplace_Get_Placement_Result(string filename, bool top_or_not)
             {
                 word = split(many_word[0], '\t');
                 word[0] = word[0].erase(0, 1);
-                Inst[stoi(word[0]) - 1].top = top_or_not;
-                Inst[stoi(word[0]) - 1].locationX = stoi(word[1]); // Update LL_X in instances
-                Inst[stoi(word[0]) - 1].locationY = stoi(word[2]); // Update LL_Y in instances
+                Inst[offset_index[stoi(word[0]) - 1]].top = top_or_not;
+                Inst[offset_index[stoi(word[0]) - 1]].locationX = stoi(word[1]); // Update LL_X in instances
+                Inst[offset_index[stoi(word[0]) - 1]].locationY = stoi(word[2]); // Update LL_Y in instances
                 // Rotate angle
                 if (many_word[2] == "N" || many_word[2] == "FN")
                 {
-                    Inst[stoi(word[0]) - 1].rotate = 0;
+                    Inst[offset_index[stoi(word[0]) - 1]].rotate = 0;
                 }
                 else if (many_word[2] == "W" || many_word[2] == "FW")
                 {
-                    Inst[stoi(word[0]) - 1].rotate = 90;
+                    Inst[offset_index[stoi(word[0]) - 1]].rotate = 90;
                 }
                 else if (many_word[2] == "S" || many_word[2] == "FS")
                 {
-                    Inst[stoi(word[0]) - 1].rotate = 180;
+                    Inst[offset_index[stoi(word[0]) - 1]].rotate = 180;
                 }
                 else if (many_word[2] == "E" || many_word[2] == "FE")
                 {
-                    Inst[stoi(word[0]) - 1].rotate = 270;
+                    Inst[offset_index[stoi(word[0]) - 1]].rotate = 270;
                 }
             }
             else
@@ -2342,13 +2390,13 @@ void Output_Format(string filename)
     fout << "TopDiePlacement " << IA.size() << endl;
     for (int i = 0; i < IA.size(); i++)
     {
-        fout << "Inst " << Inst[IA[i]].instName << " " << Inst[IA[i]].locationX << " " << Inst[IA[i]].locationY << " "
+        fout << "Inst " << "C"<<Inst[IA[i]].instindex+1 << " " << Inst[IA[i]].locationX << " " << Inst[IA[i]].locationY << " "
              << "R" << Inst[IA[i]].rotate << endl;
     }
     fout << "BottomDiePlacement " << IB.size() << endl;
     for (int i = 0; i < IB.size(); i++)
     {
-        fout << "Inst " << Inst[IB[i]].instName << " " << Inst[IB[i]].locationX << " " << Inst[IB[i]].locationY << " "
+        fout << "Inst " << "C"<<Inst[IB[i]].instindex+1 << " " << Inst[IB[i]].locationX << " " << Inst[IB[i]].locationY << " "
              << "R" << Inst[IB[i]].rotate << endl;
     }
     fout << "NumTerminals " << Terminals.size() << endl;
