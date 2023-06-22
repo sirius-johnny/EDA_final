@@ -301,6 +301,12 @@ void initialize_gain()
 {
     // area initialize
     initialize_area();
+    // pointer initialize
+    for (int i = 0; i < NumInstances; i++)
+    {
+        Inst[i].next = nullptr;
+        Inst[i].previous = nullptr;
+    }
     // gain initialize
     for (int i = 0; i < NumNets; i++)
     {
@@ -408,7 +414,7 @@ void del_cell(int index, int gain)
     // cout << "delete C" << index + 1 << " with gain " << gain << endl;
     if (!Inst[index].previous)
     {
-        if (Inst[index].temp_top)
+        if (Inst[index].top)
         {
             if (!Inst[index].next)
                 bucketA[max_pin - gain].c = nullptr;
@@ -1581,18 +1587,11 @@ int main(int argc, char *argv[])
         // print_set();
         num_terminal();
 
-        if (NumInstances < 300000)
+        while (1)
         {
-            while (1)
-            {
-                bool end = F_M();
-                if (end)
-                    break;
-            }
-        }
-        else
-        {
-            F_M(); // case4
+            bool end = F_M();
+            if (end)
+                break;
         }
 
         update_set(); // 一定要
