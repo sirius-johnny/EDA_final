@@ -1585,18 +1585,19 @@ int main(int argc, char *argv[])
     cout << "-------------------" << endl;
     // 讀檔結束決定ICCAD_B.cpp要進行(請修改mode為partition或terminal)：
     string mode;
-    cout << "MODE[partition]                        DO>> partition, and generate NTUplace files." << endl;
-    cout << "MODE[pinprojection]                    DO>> pin projecting, and generate BOTTOM NTUplace files." << endl;
-    cout << "MODE[terminal_afterplaceTOPBOT_RESULT] OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP&BOT." << endl;
-    cout << "MODE[terminal_afterplaceTOP]           DO>> terminal placing after placing TOP, and generate BOTTOM NTUplace files." << endl;
-    cout << "MODE[terminal_afterplaceTOP_RESULT]    OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP, then placing BOT." << endl;
-    cout << "MODE[terminal_lookup2times_RESULT]     OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP, then placing BOT, placing terminal again." << endl;
+    cout << "MODE[partition_generateTOP&BOT]          DO>> partition, and generate NTUplace files." << endl;
+    cout << "MODE[all_pinprojection_generateBOT]      DO>> pin projecting, and generate BOTTOM NTUplace files." << endl;
+    cout << "MODE[single_pinprojection_generateBOT]   DO>> SINGLE pin projecting, and generate BOTTOM NTUplace files." << endl;
+    cout << "MODE[terminal_afterplaceTOP_generateBOT] DO>> terminal placing after placing TOP, and generate BOTTOM NTUplace files." << endl;
+    cout << "MODE[terminal_afterplaceTOPBOT_RESULT]   OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP&BOT." << endl;
+    cout << "MODE[terminal_afterplaceTOP_RESULT]      OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP, then placing BOT." << endl;
+    cout << "MODE[terminal_lookup2times_RESULT]       OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP, then placing BOT, placing terminal again." << endl;
     cout << "Enter MODE for ICCAD_B.cpp: ";
     cin >> mode;
     cout<<"-----------------------------------------"<<endl;
     // cout<<Inst[99669-1].libCellName<<" "<<Inst[99669-1].libCePll.Name<<" "<<Inst[99669-1].libCell.size_X<<" "<<Inst[99669-1].libCell.size_Y<<endl;
     string Top_NTUplace_filename, Bot_NTUplace_filename;
-    if (mode == "partition")
+    if (mode == "partition_generateTOP&BOT")
     {
         cout << "Enter Top_NTUplace_filename, generate: ";
         cin >> Top_NTUplace_filename;
@@ -1641,7 +1642,20 @@ int main(int argc, char *argv[])
         // cout<<Inst[99669-1].libCellName<<" "<<Inst[99669-1].libCell.Name<<" "<<Inst[99669-1].libCell.size_X<<" "<<Inst[99669-1].libCell.size_Y<<endl;
     }
 
-    else if (mode == "pinprojection")
+    else if (mode == "all_pinprojection_generateBOT")
+    {
+        cout << "Enter Top_NTUplace_filename, open: ";
+        cin >> Top_NTUplace_filename;
+        cout << "Enter Bot_NTUplace_filename, generate: ";
+        cin >> Bot_NTUplace_filename;
+        print_set();
+        NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
+        update_set();
+        Net_degree_counter();
+        NTUplace_BOT_PinProjection(Bot_NTUplace_filename + "-" + mode);
+    }
+
+    else if (mode == "single_pinprojection_generateBOT")
     {
         cout << "Enter Top_NTUplace_filename, open: ";
         cin >> Top_NTUplace_filename;
@@ -1654,40 +1668,7 @@ int main(int argc, char *argv[])
         NTUplace_BOT_PinProjection_SINGLE(Bot_NTUplace_filename + "-" + mode);
     }
 
-    else if (mode == "terminal_afterplaceTOPBOT_RESULT")
-    {
-        cout << "Enter Top_NTUplace_filename, open: ";
-        cin >> Top_NTUplace_filename;
-        cout << "Enter Bot_NTUplace_filename, open: ";
-        cin >> Bot_NTUplace_filename;
-        NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
-        NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
-        update_set();
-        // NTUplace_Get_Placement_Result(Bot_NTUplace_filename + "_PROJECTION");
-        Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
-
-        // fstream fout;
-        // fout.open("Terminal.txt", ios::out);
-        // for(int i=0; i<NumNets; i++){
-        //     if(Nets[i].Top_degree * Nets[i].Bot_degree != 0){
-        //         fout<<"Terminal "<<"N"<<i+1<<endl;
-        //     }
-        // }
-        net_edges_init_V2();
-        int sizex = 0, sizey = 0;
-        slot_init_V2(sizex, sizey);
-        terminal_in_order(sizex, sizey);
-        // place_terminal(sizex, sizey);
-        for (auto &terminal : Terminals)
-        {
-            terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
-            terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
-        }
-        /// terminal end ///
-        Output_Format(case_filename + "-" + mode);
-    }
-
-    else if (mode == "terminal_afterplaceTOP")
+    else if (mode == "terminal_afterplaceTOP_generateBOT")
     {
 
         cout << "Enter Top_NTUplace_filename, open: ";
@@ -1710,6 +1691,42 @@ int main(int argc, char *argv[])
         NTUplace_BOT_TerminalProjection(Bot_NTUplace_filename + "-" + mode);
     }
 
+    else if (mode == "terminal_afterplaceTOPBOT_RESULT")
+    {
+        cout << "Enter Top_NTUplace_filename, open: ";
+        cin >> Top_NTUplace_filename;
+        cout << "Enter Bot_NTUplace_filename, open: ";
+        cin >> Bot_NTUplace_filename;
+        NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
+        NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
+        update_set();
+
+        Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
+
+        if(case_filename=="ProblemB_case1" || case_filename=="ProblemB_case2"){
+            net_edges_init();
+            int sizex = 0, sizey = 0;
+            slot_init(sizex, sizey);
+            place_terminal(sizex, sizey);
+        }
+
+        else if(case_filename=="ProblemB_case3" || case_filename=="ProblemB_case4"){
+            net_edges_init_V2();
+            int sizex = 0, sizey = 0;
+            slot_init_V2(sizex, sizey);
+            terminal_in_order(sizex, sizey);
+        }
+        
+        
+        for (auto &terminal : Terminals)
+        {
+            terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
+            terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
+        }
+        /// terminal end ///
+        Output_Format(case_filename + "-" + mode);
+    }
+
     else if (mode == "terminal_afterplaceTOP_RESULT")
     {
         cout << "Enter Top_NTUplace_filename, open: ";
@@ -1730,10 +1747,19 @@ int main(int argc, char *argv[])
         NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
         update_set();
         Net_degree_counter(); // 一定要記得先call這個function才能用NTUplace
-        net_edges_init();
-        int sizex = 0, sizey = 0;
-        slot_init(sizex, sizey);
-        place_terminal(sizex, sizey);
+        if(case_filename=="ProblemB_case1" ||case_filename=="ProblemB_case2" ){
+            net_edges_init();
+            int sizex = 0, sizey = 0;
+            slot_init(sizex, sizey);
+            place_terminal(sizex, sizey);
+        }
+        else if(case_filename=="ProblemB_case3" ||case_filename=="ProblemB_case4" ){
+            net_edges_init_V2();
+            int sizex = 0, sizey = 0;
+            slot_init_V2(sizex, sizey);
+            terminal_in_order(sizex, sizey);
+        }
+        
         for (auto &terminal : Terminals)
         {
             terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
