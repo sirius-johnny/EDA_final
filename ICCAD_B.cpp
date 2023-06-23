@@ -1626,8 +1626,7 @@ int main(int argc, char *argv[])
         // print_set();
         num_terminal();
 
-        // F_M(); // case4時要開啟這行，做一次FM就好
-        while (1) // case4先把1改成0
+        while (1) 
         {
             bool end = F_M();
             if (end)
