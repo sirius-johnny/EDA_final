@@ -39,3 +39,6 @@ MODE若是結尾沒有_RESULT，意即有generate，則會產生NTUplace3所需�
 
 [Other Files]
 ProblemB_case1.txt, ProblemB_case4.txt, ProblemB_case3.txt, ProblemB_case4.txt: 大會提供測資
+
+[備註]
+Case3 & Case4目前都只有產生合法解，意即只能進行Basic Placement for Valid Solution的部分，其他的部分runtime應該會爆炸，這部分可以參見我們報告書中的未來展望section。
