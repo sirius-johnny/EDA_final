@@ -325,6 +325,12 @@ void initialize_gain()
 {
     // area initialize
     initialize_area();
+    // pointer initialize
+    for (int i = 0; i < NumInstances; i++)
+    {
+        Inst[i].next = nullptr;
+        Inst[i].previous = nullptr;
+    }
     // gain initialize
     for (int i = 0; i < NumNets; i++)
     {
@@ -432,7 +438,7 @@ void del_cell(int index, int gain)
     // cout << "delete C" << index + 1 << " with gain " << gain << endl;
     if (!Inst[index].previous)
     {
-        if (Inst[index].temp_top)
+        if (Inst[index].top)
         {
             if (!Inst[index].next)
                 bucketA[max_pin - gain].c = nullptr;
@@ -1042,7 +1048,7 @@ void net_edges_init_top()
             term.edges[0] = ceil((float)max((int)(term.edges[0] - TerminalSpacing - TerminalSize_X) / 2, 0) / (float)(TerminalSize_X + TerminalSpacing));
             term.edges[1] = v[2];
             term.edges[1] = floor((float)max((int)(term.edges[1] - TerminalSpacing - TerminalSize_X) / 2, 0) / (float)(TerminalSize_X + TerminalSpacing));
-            v = {top_top, top_bot, int(DieSize_UR_Y) , 0};
+            v = {top_top, top_bot, int(DieSize_UR_Y), 0};
             sort(v.begin(), v.end());
             term.edges[2] = v[1];
             term.edges[2] = ceil((float)max((int)(term.edges[2] - TerminalSpacing - TerminalSize_Y) / 2, 0) / (float)(TerminalSize_Y + TerminalSpacing));
@@ -1094,10 +1100,12 @@ void slot_init_V2(int &sizex, int &sizey)
     sizey = floor((float)(DieSize_UR_Y - (2 * TerminalSpacing + TerminalSize_Y)) / (float)(TerminalSpacing + TerminalSize_Y)) + 1;
 }
 
-void terminal_in_order(int sizex, int sizey){
-    for(int i=0; i < Terminals.size(); i++){
-        Terminals[i].center_x = i%sizex;
-        Terminals[i].center_y = i/sizex;
+void terminal_in_order(int sizex, int sizey)
+{
+    for (int i = 0; i < Terminals.size(); i++)
+    {
+        Terminals[i].center_x = i % sizex;
+        Terminals[i].center_y = i / sizex;
     }
 }
 
@@ -1187,14 +1195,14 @@ bool ripple(Terminal *terminal, int sizex, int sizey)
 }
 
 bool ripple_better(Terminal *terminal, int sizex, int sizey)
-{   
+{
     for (int i = terminal->edges[0]; i <= terminal->edges[1]; i++)
     {
         for (int j = terminal->edges[2]; j <= terminal->edges[3]; j++)
         {
             int occupying_term = slot_arr[1 * sizex * sizey + j * sizex + i];
             auto it = find_if(Terminals.begin(), Terminals.end(), [occupying_term](Terminal term)
-                            { return term.netNum == occupying_term; });
+                              { return term.netNum == occupying_term; });
             if (check_replace(&(*it), i, j, sizex, sizey))
             {
                 slot_arr[1 * sizex * sizey + j * sizex + i] = terminal->netNum;
@@ -1210,29 +1218,30 @@ bool ripple_better(Terminal *terminal, int sizex, int sizey)
         {
             int occupying_term = slot_arr[1 * sizex * sizey + j * sizex + i];
             auto it = find_if(Terminals.begin(), Terminals.end(), [occupying_term](Terminal term)
-                            { return term.netNum == occupying_term; });
+                              { return term.netNum == occupying_term; });
             Terminal *occu_term = &(*it);
-            for(int k = occu_term->edges[0]; k<= occu_term->edges[1]; k++){
-                for(int l = occu_term->edges[2]; l <= occu_term->edges[3]; l++){
+            for (int k = occu_term->edges[0]; k <= occu_term->edges[1]; k++)
+            {
+                for (int l = occu_term->edges[2]; l <= occu_term->edges[3]; l++)
+                {
                     int occupying_term2 = slot_arr[1 * sizex * sizey + l * sizex + k];
                     auto it2 = find_if(Terminals.begin(), Terminals.end(), [occupying_term2](Terminal term)
-                            { return term.netNum == occupying_term2; });
-                    if (check_replace(&(*it2), k, l, sizex, sizey)){
+                                       { return term.netNum == occupying_term2; });
+                    if (check_replace(&(*it2), k, l, sizex, sizey))
+                    {
                         slot_arr[1 * sizex * sizey + l * sizex + k] = occu_term->netNum;
                         occu_term->center_x = k;
                         occu_term->center_y = l;
                         slot_arr[1 * sizex * sizey + j * sizex + i] = terminal->netNum;
                         terminal->center_x = i;
                         terminal->center_y = j;
-                        return(true);
+                        return (true);
                     }
                 }
             }
-            
         }
     }
-    return(false);
-
+    return (false);
 }
 
 void search_slot(Terminal *terminal, int sizex, int sizey)
@@ -1366,17 +1375,17 @@ int main(int argc, char *argv[])
 {
     fstream fin;
     string case_filename;
-    cout<<"Enter case filename (without .txt): ";
-    cin>>case_filename;
-    fin.open(case_filename+".txt", ios::in);
+    cout << "Enter case filename (without .txt): ";
+    cin >> case_filename;
+    fin.open(case_filename + ".txt", ios::in);
     if (!fin)
     {
-        cout << case_filename+".txt"+" doesn't exist!";
+        cout << case_filename + ".txt" + " doesn't exist!";
         return 1;
     }
     else
     {
-        cout<< "Reading "+case_filename+".txt"+" ..."<<endl;
+        cout << "Reading " + case_filename + ".txt" + " ..." << endl;
         string lineStr;
         vector<string> words;
 
@@ -1572,8 +1581,8 @@ int main(int argc, char *argv[])
             }
         }
     }
-    cout<<"Reading file FINISH"<<endl;
-    cout<<"-------------------"<<endl;
+    cout << "Reading file FINISH" << endl;
+    cout << "-------------------" << endl;
     // 讀檔結束決定ICCAD_B.cpp要進行(請修改mode為partition或terminal)：
     string mode;
     cout << "MODE[partition]                        DO>> partition, and generate NTUplace files." << endl;
@@ -1581,7 +1590,7 @@ int main(int argc, char *argv[])
     cout << "MODE[terminal_afterplaceTOPBOT_RESULT] OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP&BOT." << endl;
     cout << "MODE[terminal_afterplaceTOP]           DO>> terminal placing after placing TOP, and generate BOTTOM NTUplace files." << endl;
     cout << "MODE[terminal_afterplaceTOP_RESULT]    OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP, then placing BOT." << endl;
-    cout << "MODE[terminal_lookup2times_RESULT]     OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP, then placing BOT, placing terminal again."<<endl;
+    cout << "MODE[terminal_lookup2times_RESULT]     OUTPUTFILE>> result.txt, PROCESS>> Do terminal placing after placing TOP, then placing BOT, placing terminal again." << endl;
     cout << "Enter MODE for ICCAD_B.cpp: ";
     cin >> mode;
     cout<<"-----------------------------------------"<<endl;
@@ -1589,12 +1598,10 @@ int main(int argc, char *argv[])
     string Top_NTUplace_filename, Bot_NTUplace_filename;
     if (mode == "partition")
     {
-        cout<< "Enter Top_NTUplace_filename, generate: ";
-        cin>>Top_NTUplace_filename;
-        cout<< "Enter Bot_NTUplace_filename, generate: ";
-        cin>>Bot_NTUplace_filename;
-
-        // partition_init();
+        cout << "Enter Top_NTUplace_filename, generate: ";
+        cin >> Top_NTUplace_filename;
+        cout << "Enter Bot_NTUplace_filename, generate: ";
+        cin >> Bot_NTUplace_filename;
         if (NumTechnologies == "1")
         {
             partition_init();
@@ -1603,26 +1610,26 @@ int main(int argc, char *argv[])
         {
             ratio_split();
         }
+        
         // ratio_split();
-        // update_set();
+        update_set();
 
         initialize_area();
         cout << "max_areaA=    " << max_areaA << ", max_areaB=     " << max_areaB << endl;
         cout << "current_areaA=" << areaA << ", current_areaB=" << areaB << endl;
-        print_set();
+        // print_set();
         num_terminal();
 
+        
         // F_M(); // case4時要開啟這行，做一次FM就好  
         while (1) // case4先把1改成0
         {
             bool end = F_M();
             if (end)
-            {
-                update_set(); // 一定要
                 break;
-            }
         }
-        update_set();
+
+        update_set(); // 一定要
 
         num_terminal();
         initialize_area();
@@ -1636,25 +1643,23 @@ int main(int argc, char *argv[])
 
     else if (mode == "pinprojection")
     {
-        cout<< "Enter Top_NTUplace_filename, open: ";
-        cin>>Top_NTUplace_filename;
-        cout<< "Enter Bot_NTUplace_filename, generate: ";
-        cin>>Bot_NTUplace_filename;
-
+        cout << "Enter Top_NTUplace_filename, open: ";
+        cin >> Top_NTUplace_filename;
+        cout << "Enter Bot_NTUplace_filename, generate: ";
+        cin >> Bot_NTUplace_filename;
         print_set();
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         update_set();
         Net_degree_counter();
-        NTUplace_BOT_PinProjection_SINGLE(Bot_NTUplace_filename+"-"+mode);
+        NTUplace_BOT_PinProjection_SINGLE(Bot_NTUplace_filename + "-" + mode);
     }
 
     else if (mode == "terminal_afterplaceTOPBOT_RESULT")
     {
-        cout<< "Enter Top_NTUplace_filename, open: ";
-        cin>>Top_NTUplace_filename;
-        cout<< "Enter Bot_NTUplace_filename, open: ";
-        cin>>Bot_NTUplace_filename;
-
+        cout << "Enter Top_NTUplace_filename, open: ";
+        cin >> Top_NTUplace_filename;
+        cout << "Enter Bot_NTUplace_filename, open: ";
+        cin >> Bot_NTUplace_filename;
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
         update_set();
@@ -1679,16 +1684,16 @@ int main(int argc, char *argv[])
             terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
         }
         /// terminal end ///
-        Output_Format(case_filename+"-"+mode);
+        Output_Format(case_filename + "-" + mode);
     }
 
-    else if(mode == "terminal_afterplaceTOP"){
-        
-        cout<< "Enter Top_NTUplace_filename, open: ";
-        cin>>Top_NTUplace_filename;
-        cout<< "Enter Bot_NTUplace_filename, generate: ";
-        cin>>Bot_NTUplace_filename;
+    else if (mode == "terminal_afterplaceTOP")
+    {
 
+        cout << "Enter Top_NTUplace_filename, open: ";
+        cin >> Top_NTUplace_filename;
+        cout << "Enter Bot_NTUplace_filename, generate: ";
+        cin >> Bot_NTUplace_filename;
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         update_set();
         Net_degree_counter();
@@ -1701,26 +1706,26 @@ int main(int argc, char *argv[])
             terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
             terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
         }
-        //TODO:印出terminal寫入BOT的NTUplace檔案們
-        NTUplace_BOT_TerminalProjection(Bot_NTUplace_filename+"-"+mode);
+        // TODO:印出terminal寫入BOT的NTUplace檔案們
+        NTUplace_BOT_TerminalProjection(Bot_NTUplace_filename + "-" + mode);
     }
 
-    else if(mode == "terminal_afterplaceTOP_RESULT"){
-        cout<< "Enter Top_NTUplace_filename, open: ";
-        cin>>Top_NTUplace_filename;
-        cout<< "Enter Bot_NTUplace_filename, open: ";
-        cin>>Bot_NTUplace_filename;
-
-        TOP_ter_BOT_Output(Top_NTUplace_filename, Bot_NTUplace_filename, case_filename+"-"+mode);
+    else if (mode == "terminal_afterplaceTOP_RESULT")
+    {
+        cout << "Enter Top_NTUplace_filename, open: ";
+        cin >> Top_NTUplace_filename;
+        cout << "Enter Bot_NTUplace_filename, open: ";
+        cin >> Bot_NTUplace_filename;
+        TOP_ter_BOT_Output(Top_NTUplace_filename, Bot_NTUplace_filename, case_filename + "-" + mode);
     }
 
-    else if(mode == "terminal_lookup2times_RESULT"){
-        //先參考TOP後擺出termminals，再用結果擺出BOT，最後根據TOP和BOT再擺一次terminals
-        cout<< "Enter Top_NTUplace_filename, open: ";
-        cin>>Top_NTUplace_filename;
-        cout<< "Enter Bot_NTUplace_filename, open: ";
-        cin>>Bot_NTUplace_filename;
-        
+    else if (mode == "terminal_lookup2times_RESULT")
+    {
+        // 先參考TOP後擺出termminals，再用結果擺出BOT，最後根據TOP和BOT再擺一次terminals
+        cout << "Enter Top_NTUplace_filename, open: ";
+        cin >> Top_NTUplace_filename;
+        cout << "Enter Bot_NTUplace_filename, open: ";
+        cin >> Bot_NTUplace_filename;
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         NTUplace_Get_Placement_Result(Bot_NTUplace_filename, false);
         update_set();
@@ -1734,10 +1739,11 @@ int main(int argc, char *argv[])
             terminal.center_x = terminal.center_x * (TerminalSize_X + TerminalSpacing) + TerminalSpacing + TerminalSize_X / 2;
             terminal.center_y = terminal.center_y * (TerminalSize_Y + TerminalSpacing) + TerminalSpacing + TerminalSize_Y / 2;
         }
-        Output_Format(case_filename+"-"+mode);
+        Output_Format(case_filename + "-" + mode);
     }
-    else{
-        cout<<"MODE doesn't exist! Program end!"<<endl;
+    else
+    {
+        cout << "MODE doesn't exist! Program end!" << endl;
     }
 }
 
@@ -2274,11 +2280,14 @@ void NTUplace_BOT_TerminalProjection(string filename)
     fnodes.open(filename + ".nodes", ios::out);
     fnodes << "UCLA nodes 1.0" << endl
            << endl;
-    fnodes << "NumNodes : " << IB.size()+Terminals.size() << endl;
+    fnodes << "NumNodes : " << IB.size() + Terminals.size() << endl;
     fnodes << "NumTerminals : " << Terminals.size() << endl;
     // Terminal還沒存進去喔
-    for(int i=0; i<Terminals.size(); i++){
-        fnodes <<"\t"<< "T"+Terminals[i].netName<<"\t"<<0<<"\t"<<0<<"\t"<<"terminal"<<endl;
+    for (int i = 0; i < Terminals.size(); i++)
+    {
+        fnodes << "\t"
+               << "T" + Terminals[i].netName << "\t" << 0 << "\t" << 0 << "\t"
+               << "terminal" << endl;
     }
     for (int i = 0; i < IB.size(); i++)
     {
@@ -2290,25 +2299,31 @@ void NTUplace_BOT_TerminalProjection(string filename)
     fnets << "UCLA nets 1.0" << endl
           << endl;
     fnets << "NumNets : " << NumNets << endl;
-    fnets << "NumPins : " << Bot_NumPins+Terminals.size() << endl;
+    fnets << "NumPins : " << Bot_NumPins + Terminals.size() << endl;
     double pin_x_offset = 0;
     double pin_y_offset = 0;
     for (int i = 0; i < NumNets; i++)
     {
         bool Ter_place = false;
-        for(int k=0; k<Terminals.size(); k++){
-            if(Terminals[k].netNum==i+1){
-                fnets << "NetDegree : " << Nets[i].Bot_degree+1 << "\t" << "N" << i + 1 << endl;
-                fnets << "\t" << "T"+Terminals[k].netName << " I "<<endl;
+        for (int k = 0; k < Terminals.size(); k++)
+        {
+            if (Terminals[k].netNum == i + 1)
+            {
+                fnets << "NetDegree : " << Nets[i].Bot_degree + 1 << "\t"
+                      << "N" << i + 1 << endl;
+                fnets << "\t"
+                      << "T" + Terminals[k].netName << " I " << endl;
                 Ter_place = true;
                 break;
             }
         }
 
-        if(!Ter_place){
-            fnets << "NetDegree : " << Nets[i].Bot_degree << "\t" << "N" << i + 1 << endl;
+        if (!Ter_place)
+        {
+            fnets << "NetDegree : " << Nets[i].Bot_degree << "\t"
+                  << "N" << i + 1 << endl;
         }
-        
+
         for (int j = 0; j < Nets[i].Pin_num; j++)
         {
             if (!Inst[Nets[i].Ins_Pin[j][0]].top)
@@ -2324,8 +2339,10 @@ void NTUplace_BOT_TerminalProjection(string filename)
     fwts.open(filename + ".wts", ios::out);
     fwts << "UCLA wts 1.0" << endl
          << endl;
-    for(int i=0; i<Terminals.size(); i++){
-        fwts<<"\t"<<"T"+Terminals[i].netName<<"\t"<<0<<endl;
+    for (int i = 0; i < Terminals.size(); i++)
+    {
+        fwts << "\t"
+             << "T" + Terminals[i].netName << "\t" << 0 << endl;
     }
     for (int i = 0; i < IB.size(); i++)
     {
@@ -2337,8 +2354,10 @@ void NTUplace_BOT_TerminalProjection(string filename)
     fpl << "UCLA pl 1.0" << endl
         << endl;
 
-    for(int i=0; i<Terminals.size(); i++){
-        fpl<<"T"+Terminals[i].netName<<"\t"<<Terminals[i].center_x<<"\t"<<Terminals[i].center_y<<" : "<<"/FIXED"<<endl;
+    for (int i = 0; i < Terminals.size(); i++)
+    {
+        fpl << "T" + Terminals[i].netName << "\t" << Terminals[i].center_x << "\t" << Terminals[i].center_y << " : "
+            << "/FIXED" << endl;
     }
     for (int i = 0; i < IB.size(); i++)
     {
@@ -2407,57 +2426,68 @@ void Output_Format(string filename)
     fout.close();
 }
 
-void TOP_ter_BOT_Output(string TOP_filename, string BOT_filename, string filename){
+void TOP_ter_BOT_Output(string TOP_filename, string BOT_filename, string filename)
+{
     // READ TOP_PLACEMENT_RESULT_FILE
     fstream TOP_Result_File;
-    TOP_Result_File.open(TOP_filename+".ntup.pl");
+    TOP_Result_File.open(TOP_filename + ".ntup.pl");
     vector<string> every_line_in_TOPFILE;
     string single_line_in_TOPFILE;
-    if(TOP_Result_File){
-        cout<<TOP_filename+".ntup.pl opens !"<<endl;
+    if (TOP_Result_File)
+    {
+        cout << TOP_filename + ".ntup.pl opens !" << endl;
         getline(TOP_Result_File, single_line_in_TOPFILE);
         getline(TOP_Result_File, single_line_in_TOPFILE);
         while (getline(TOP_Result_File, single_line_in_TOPFILE))
         {
-            if(single_line_in_TOPFILE=="") break;
-            else every_line_in_TOPFILE.push_back(single_line_in_TOPFILE);
+            if (single_line_in_TOPFILE == "")
+                break;
+            else
+                every_line_in_TOPFILE.push_back(single_line_in_TOPFILE);
         }
     }
-    else{
-        cout<<TOP_filename+".ntup.pl doesn't exist !"<<endl;
+    else
+    {
+        cout << TOP_filename + ".ntup.pl doesn't exist !" << endl;
     }
     TOP_Result_File.close();
 
     // READ BOT_PLACEMENT_RESULT_FILE
     fstream BOT_Result_File;
-    BOT_Result_File.open(BOT_filename+".ntup.pl");
+    BOT_Result_File.open(BOT_filename + ".ntup.pl");
     vector<string> every_line_in_BOTFILE;
     vector<string> terminal_in_BOTFILE;
     string single_line_in_BOTFILE;
-    if(BOT_Result_File){
-        cout<<BOT_filename+".ntup.pl opens !"<<endl;
+    if (BOT_Result_File)
+    {
+        cout << BOT_filename + ".ntup.pl opens !" << endl;
         getline(BOT_Result_File, single_line_in_BOTFILE);
         getline(BOT_Result_File, single_line_in_BOTFILE);
         while (getline(BOT_Result_File, single_line_in_BOTFILE))
         {
-            if(single_line_in_BOTFILE=="") break;
-            else {
+            if (single_line_in_BOTFILE == "")
+                break;
+            else
+            {
                 vector<string> check;
                 check = split(single_line_in_BOTFILE, ' ');
-                if(check[check.size()-1] != "/FIXED"){
+                if (check[check.size() - 1] != "/FIXED")
+                {
                     every_line_in_BOTFILE.push_back(single_line_in_BOTFILE);
                 }
-                else{
+                else
+                {
                     terminal_in_BOTFILE.push_back(single_line_in_BOTFILE);
                 }
             }
         }
     }
-    else{
-        cout<<BOT_filename+".ntup.pl doesn't exist !"<<endl;
+    else
+    {
+        cout << BOT_filename + ".ntup.pl doesn't exist !" << endl;
     }
     BOT_Result_File.close();
-    
+
     // READ TERMINAL_PLACEMENT_RESULT_FILE
 
     // WRITE casex_result.txt
@@ -2472,10 +2502,14 @@ void TOP_ter_BOT_Output(string TOP_filename, string BOT_filename, string filenam
     {
         many_word = split(every_line_in_TOPFILE[i], ' ');
         word = split(many_word[0], '\t');
-        if(many_word[2]=="N" || many_word[2]=="FN") rotate = 0;
-        else if(many_word[2]=="W" || many_word[2]=="FW") rotate = 90;
-        else if(many_word[2]=="S" || many_word[2]=="FS") rotate = 180;
-        else if(many_word[2]=="E" || many_word[2]=="FE") rotate = 270;
+        if (many_word[2] == "N" || many_word[2] == "FN")
+            rotate = 0;
+        else if (many_word[2] == "W" || many_word[2] == "FW")
+            rotate = 90;
+        else if (many_word[2] == "S" || many_word[2] == "FS")
+            rotate = 180;
+        else if (many_word[2] == "E" || many_word[2] == "FE")
+            rotate = 270;
         fout << "Inst " << word[0] << " " << word[1] << " " << word[2] << " "
              << "R" << rotate << endl;
     }
@@ -2484,17 +2518,22 @@ void TOP_ter_BOT_Output(string TOP_filename, string BOT_filename, string filenam
     {
         many_word = split(every_line_in_BOTFILE[i], ' ');
         word = split(many_word[0], '\t');
-        if(many_word[2]=="N" || many_word[2]=="FN") rotate = 0;
-        else if(many_word[2]=="W" || many_word[2]=="FW") rotate = 90;
-        else if(many_word[2]=="S" || many_word[2]=="FS") rotate = 180;
-        else if(many_word[2]=="E" || many_word[2]=="FE") rotate = 270;
+        if (many_word[2] == "N" || many_word[2] == "FN")
+            rotate = 0;
+        else if (many_word[2] == "W" || many_word[2] == "FW")
+            rotate = 90;
+        else if (many_word[2] == "S" || many_word[2] == "FS")
+            rotate = 180;
+        else if (many_word[2] == "E" || many_word[2] == "FE")
+            rotate = 270;
         fout << "Inst " << word[0] << " " << word[1] << " " << word[2] << " "
              << "R" << rotate << endl;
     }
-    fout<< "NumTerminals "<<terminal_in_BOTFILE.size()<<endl;
-    for(int i=0; i<terminal_in_BOTFILE.size(); i++){
+    fout << "NumTerminals " << terminal_in_BOTFILE.size() << endl;
+    for (int i = 0; i < terminal_in_BOTFILE.size(); i++)
+    {
         many_word = split(terminal_in_BOTFILE[i], ' ');
         word = split(many_word[0], '\t');
-        fout<<"Terminal "<<word[0].erase(0,1)<<" "<<stoi(word[1])<<" "<<stoi(word[2])<<endl;
+        fout << "Terminal " << word[0].erase(0, 1) << " " << stoi(word[1]) << " " << stoi(word[2]) << endl;
     }
 }
