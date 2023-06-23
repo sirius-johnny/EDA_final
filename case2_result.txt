@@ -1,2 +1,0 @@
-TopDiePlacement 0
-BottomDiePlacement 0

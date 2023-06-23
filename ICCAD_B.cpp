@@ -326,11 +326,11 @@ void initialize_gain()
     // area initialize
     initialize_area();
     // pointer initialize
-    for (int i = 0; i < NumInstances; i++)
-    {
-        Inst[i].next = nullptr;
-        Inst[i].previous = nullptr;
-    }
+    // for (int i = 0; i < NumInstances; i++)
+    // {
+    //     Inst[i].next = nullptr;
+    //     Inst[i].previous = nullptr;
+    // }
     // gain initialize
     for (int i = 0; i < NumNets; i++)
     {
@@ -1652,7 +1652,6 @@ int main(int argc, char *argv[])
         cin >> Top_NTUplace_filename;
         cout << "Enter Bot_NTUplace_filename, generate: ";
         cin >> Bot_NTUplace_filename;
-        print_set();
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         update_set();
         Net_degree_counter();
@@ -1665,7 +1664,6 @@ int main(int argc, char *argv[])
         cin >> Top_NTUplace_filename;
         cout << "Enter Bot_NTUplace_filename, generate: ";
         cin >> Bot_NTUplace_filename;
-        print_set();
         NTUplace_Get_Placement_Result(Top_NTUplace_filename, true);
         update_set();
         Net_degree_counter();

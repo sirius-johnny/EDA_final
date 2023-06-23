@@ -1,2 +1,0 @@
-g++ -O2 -march=i686 -Wall -ffast-math -funroll-all-loops -fomit-frame-pointer -static-libgcc -static -o ntuplace BinPacking.o defrw.o detail.o DiamondLegalizer.o DiamondSearch.o FMPart.o lefdef.o lefrw.o legal.o main.o ParamPlacement.o ParserIBMMix.o Partition.o Prelegalizer.o mincutplacer.o placedb.o randomplace.o placedb_bookshelf.o metalegal.o util.o MyNLP.o -lstdc++ ../../lib/libhmetis.a ../../lib/libclef.a ../../lib/liblef.a ../../lib/libdef.a ../../lib/libipopt.a -lg2c -lm 
-
